@@ -5,12 +5,11 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun index.ts",
-    "start": "bun clean-installations && bun wipe-db && bun index.ts",
-    "gen-keys": "bun scripts/gen-keys",
-    "check-installations": "bun scripts/check-installations",
-    "clean-installations": "bun scripts/clean-installations",
-    "wipe-db": "bun scripts/wipe-db",
+    "dev": "bun src/index.ts",
+    "start": "bun clean-installations && bun wipe-db && bun src/index.ts",
+    "check-installations": "bun src/scripts/check-installations",
+    "clean-installations": "bun src/scripts/clean-installations",
+    "wipe-db": "bun src/scripts/wipe-db",
     "check": "biome check",
     "check:fix": "biome check --write --unsafe"
   },
