@@ -1,0 +1,17 @@
+.vercel
+node_modules
+.env*.local
+
+.DS_Store
+
+.env
+
+xmtp-*
+
+out/
+
+/.vscode/
+
+/dist
+
+/.data/xmtp

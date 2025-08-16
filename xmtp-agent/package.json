@@ -1,0 +1,28 @@
+{
+  "name": "xmtp-agent",
+  "version": "0.1.0",
+  "description": "XMTP Message Listener",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun index.ts",
+    "start": "bun clean-installations && bun wipe-db && bun index.ts",
+    "gen-keys": "bun scripts/gen-keys",
+    "check-installations": "bun scripts/check-installations",
+    "clean-installations": "bun scripts/clean-installations",
+    "wipe-db": "bun scripts/wipe-db",
+    "check": "biome check",
+    "check:fix": "biome check --write --unsafe"
+  },
+  "dependencies": {
+    "@xmtp/node-sdk": "^4.0.3",
+    "dotenv": "^17.2.0",
+    "uint8arrays": "^5.1.0",
+    "viem": "^2.31.7"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.1.4",
+    "@types/node": "^22.16.4",
+    "typescript": "^5.8.3"
+  }
+}
