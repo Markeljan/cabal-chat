@@ -2,9 +2,9 @@ import type { XmtpEnv } from "@xmtp/node-sdk";
 import { validateEnvironment } from "@/helpers/client";
 
 const VALID_ENVS = validateEnvironment([
-	"WALLET_KEY",
-	"ENCRYPTION_KEY",
-	"XMTP_ENV",
+  "WALLET_KEY",
+  "ENCRYPTION_KEY",
+  "XMTP_ENV",
 ]);
 
 export const { WALLET_KEY, ENCRYPTION_KEY } = VALID_ENVS;

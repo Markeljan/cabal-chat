@@ -1,86 +1,118 @@
-import { Client, Group, type GroupMember, type XmtpEnv } from "@xmtp/node-sdk";
+import { TransactionReferenceCodec } from "@xmtp/content-type-transaction-reference";
 import {
-	createSigner,
-	getDbPath,
-	getEncryptionKeyFromHex,
-	logAgentDetails,
+  ContentTypeWalletSendCalls,
+  WalletSendCallsCodec,
+} from "@xmtp/content-type-wallet-send-calls";
+import { Client, type XmtpEnv } from "@xmtp/node-sdk";
+import {
+  createSigner,
+  getEncryptionKeyFromHex,
+  logAgentDetails,
 } from "@/helpers/client";
 import { ENCRYPTION_KEY, WALLET_KEY, XMTP_ENV } from "@/lib/config";
-
-/* Create the signer using viem and parse the encryption key for the local db */
-const signer = createSigner(WALLET_KEY);
-const dbEncryptionKey = getEncryptionKeyFromHex(ENCRYPTION_KEY);
+import { USDCHandler } from "@/lib/usdc";
 
 async function main() {
-	const client = await Client.create(signer, {
-		dbEncryptionKey,
-		env: XMTP_ENV as XmtpEnv,
-		dbPath: getDbPath(XMTP_ENV),
-	});
-	void logAgentDetails(client);
+  const usdcHandler = new USDCHandler();
+  /* Create the signer using viem and parse the encryption key for the local db */
+  const signer = createSigner(WALLET_KEY);
+  const dbEncryptionKey = getEncryptionKeyFromHex(ENCRYPTION_KEY);
+  /* Initialize the xmtp client */
+  const client = await Client.create(signer, {
+    dbEncryptionKey,
+    env: XMTP_ENV as XmtpEnv,
+    codecs: [new WalletSendCallsCodec(), new TransactionReferenceCodec()],
+  });
 
-	console.log("✓ Syncing conversations...");
-	await client.conversations.sync();
+  const identifier = await signer.getIdentifier();
+  const agentAddress = identifier.identifier;
+  void logAgentDetails(client as Client);
 
-	console.log("Starting streams...");
+  /* Sync the conversations from the network to update the local db */
+  console.log("✓ Syncing conversations...");
+  await client.conversations.sync();
 
-	// Stream conversations for welcome messages
-	const conversationStream = async () => {
-		const stream = await client.conversations.stream();
-		console.log("Waiting for conversations...");
-		for await (const conversation of stream) {
-			if (conversation instanceof Group) {
-				console.log("Conversation found", conversation.id);
+  console.log("Waiting for messages...");
+  /* Stream all messages from the network */
+  const stream = await client.conversations.streamAllMessages();
 
-				const messages = await conversation.messages();
-				const hasSentBefore = messages.some(
-					(msg) =>
-						msg.senderInboxId.toLowerCase() === client.inboxId.toLowerCase(),
-				);
-				const members = await conversation.members();
-				const wasMemberBefore = members.some(
-					(member: GroupMember) =>
-						member.inboxId.toLowerCase() === client.inboxId.toLowerCase() &&
-						member.installationIds.length > 1,
-				);
-				console.log("hasSentBefore", hasSentBefore);
-				console.log("wasMemberBefore", wasMemberBefore);
-				if (!hasSentBefore && !wasMemberBefore) {
-					await conversation.send("Hey thanks for adding me to the group");
-				}
-			}
-		}
-	};
+  for await (const message of stream) {
+    /* Ignore messages from the same agent or non-text messages */
+    if (message.senderInboxId.toLowerCase() === client.inboxId.toLowerCase()) {
+      continue;
+    }
 
-	const messageStream = async () => {
-		console.log("Waiting for messages...");
-		const stream = await client.conversations.streamAllMessages();
-		for await (const message of stream) {
-			if (message.contentType?.typeId !== "group_updated") {
-				console.log("Skipping message", message.content);
-				continue;
-			}
+    /* Ignore non-text messages */
+    if (message.contentType?.typeId !== "text") {
+      continue;
+    }
 
-			const conversation = await client.conversations.getConversationById(
-				message.conversationId,
-			);
+    console.log(
+      `Received message: ${message.content as string} by ${message.senderInboxId}`,
+    );
 
-			if (
-				conversation instanceof Group &&
-				message.content &&
-				typeof message.content === "object" &&
-				"addedInboxes" in message.content
-			) {
-				for (const addedInbox of message.content.addedInboxes) {
-					await conversation.send(`Welcome to the group ${addedInbox.inboxId}`);
-				}
-			}
-		}
-	};
+    /* Get the conversation by id */
+    const conversation = await client.conversations.getConversationById(
+      message.conversationId,
+    );
 
-	// Run both streams concurrently
-	void conversationStream();
-	void messageStream();
+    if (!conversation) {
+      console.log("Unable to find conversation, skipping");
+      continue;
+    }
+
+    const inboxState = await client.preferences.inboxStateFromInboxIds([
+      message.senderInboxId,
+    ]);
+    const memberAddress = inboxState[0].identifiers[0].identifier;
+    if (!memberAddress) {
+      console.log("Unable to find member address, skipping");
+      continue;
+    }
+
+    const messageContent = message.content as string;
+    const command = messageContent.toLowerCase().trim();
+
+    try {
+      if (command === "/balance") {
+        const result = await usdcHandler.getUSDCBalance(memberAddress);
+
+        await conversation.send(`Your USDC balance is: ${result} USDC`);
+      } else if (command.startsWith("/tx ")) {
+        const amount = parseFloat(command.split(" ")[1]);
+        if (Number.isNaN(amount) || amount <= 0) {
+          await conversation.send(
+            "Please provide a valid amount. Usage: /tx <amount>",
+          );
+          continue;
+        }
+
+        // Convert amount to USDC decimals (6 decimal places)
+        const amountInDecimals = Math.floor(amount * 10 ** 6);
+
+        const walletSendCalls = usdcHandler.createUSDCTransferCalls(
+          memberAddress,
+          agentAddress,
+          amountInDecimals,
+        );
+        console.log("Replied with wallet sendcall");
+        await conversation.send(walletSendCalls, ContentTypeWalletSendCalls);
+      } else {
+        await conversation.send(
+          "Available commands:\n" +
+            "/balance - Check your USDC balance\n" +
+            "/tx <amount> - Send USDC to the agent (e.g. /tx 0.1)",
+        );
+      }
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      console.error("Error processing command:", errorMessage);
+      await conversation.send(
+        "Sorry, I encountered an error processing your command.",
+      );
+    }
+  }
 }
 
 main().catch(console.error);

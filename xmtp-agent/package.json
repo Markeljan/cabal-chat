@@ -14,14 +14,18 @@
     "check:fix": "biome check --write --unsafe"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^2.0.15",
+    "@xmtp/content-type-transaction-reference": "^2.0.2",
     "@xmtp/node-sdk": "^4.0.3",
-    "dotenv": "^17.2.0",
+    "ai": "^5.0.15",
+    "dotenv": "^17.2.1",
     "uint8arrays": "^5.1.0",
     "viem": "^2.31.7"
   },
   "devDependencies": {
     "@biomejs/biome": "2.1.4",
     "@types/node": "^22.16.4",
+    "@xmtp/content-type-wallet-send-calls": "^2.0.0",
     "typescript": "^5.8.3"
   }
 }
