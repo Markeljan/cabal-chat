@@ -3,30 +3,34 @@ import {
   ContentTypeWalletSendCalls,
   WalletSendCallsCodec,
 } from "@xmtp/content-type-wallet-send-calls";
-import { Client, type XmtpEnv } from "@xmtp/node-sdk";
+import { Client } from "@xmtp/node-sdk";
 import {
   createSigner,
+  getDbPath,
   getEncryptionKeyFromHex,
   logAgentDetails,
 } from "@/helpers/client";
 import { ENCRYPTION_KEY, WALLET_KEY, XMTP_ENV } from "@/lib/config";
 import { USDCHandler } from "@/lib/usdc";
 
+/* Create the signer using viem and parse the encryption key for the local db */
+const signer = createSigner(WALLET_KEY);
+const dbEncryptionKey = getEncryptionKeyFromHex(ENCRYPTION_KEY);
+
+/* Initialize the xmtp client */
+export const client = await Client.create(signer, {
+  dbEncryptionKey,
+  env: XMTP_ENV,
+  codecs: [new WalletSendCallsCodec(), new TransactionReferenceCodec()],
+  dbPath: getDbPath("xmtp"),
+});
+
 async function main() {
   const usdcHandler = new USDCHandler();
-  /* Create the signer using viem and parse the encryption key for the local db */
-  const signer = createSigner(WALLET_KEY);
-  const dbEncryptionKey = getEncryptionKeyFromHex(ENCRYPTION_KEY);
-  /* Initialize the xmtp client */
-  const client = await Client.create(signer, {
-    dbEncryptionKey,
-    env: XMTP_ENV as XmtpEnv,
-    codecs: [new WalletSendCallsCodec(), new TransactionReferenceCodec()],
-  });
 
-  const identifier = await signer.getIdentifier();
-  const agentAddress = identifier.identifier;
-  void logAgentDetails(client as Client);
+  // const identifier = await signer.getIdentifier();
+  // const agentAddress = identifier.identifier;
+  void logAgentDetails(client);
 
   /* Sync the conversations from the network to update the local db */
   console.log("✓ Syncing conversations...");
@@ -90,11 +94,11 @@ async function main() {
         // Convert amount to USDC decimals (6 decimal places)
         const amountInDecimals = Math.floor(amount * 10 ** 6);
 
-        const walletSendCalls = usdcHandler.createUSDCTransferCalls(
-          memberAddress,
-          agentAddress,
-          amountInDecimals,
-        );
+        const walletSendCalls = usdcHandler.createUSDCTransferCalls({
+          recipientAddress: memberAddress,
+          amount: amountInDecimals,
+        });
+
         console.log("Replied with wallet sendcall");
         await conversation.send(walletSendCalls, ContentTypeWalletSendCalls);
       } else {

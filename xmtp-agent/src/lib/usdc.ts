@@ -60,11 +60,13 @@ export class USDCHandler {
   /**
    * Create wallet send calls parameters for USDC transfer
    */
-  createUSDCTransferCalls(
-    fromAddress: string,
-    recipientAddress: string,
-    amount: number,
-  ): WalletSendCallsParams {
+  createUSDCTransferCalls({
+    recipientAddress,
+    amount,
+  }: {
+    recipientAddress: string;
+    amount: number;
+  }): WalletSendCallsParams {
     const methodSignature = "0xa9059cbb"; // Function signature for ERC20 'transfer(address,uint256)'
 
     // Format the transaction data following ERC20 transfer standard
