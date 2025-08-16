@@ -70,7 +70,7 @@ export const getEncryptionKeyFromHex = (hex: string) => {
 
 export const getDbPath = (description: string = "xmtp") => {
   //Checks if the environment is a Railway deployment
-  const volumePath = process.env.RAILWAY_VOLUME_MOUNT_PATH ?? "../.data/xmtp";
+  const volumePath = process.env.RAILWAY_VOLUME_MOUNT_PATH ?? "./.data/xmtp";
   // Create database directory if it doesn't exist
   if (!fs.existsSync(volumePath)) {
     fs.mkdirSync(volumePath, { recursive: true });
@@ -109,12 +109,12 @@ export const logAgentDetails = async (clients: XMTPClient): Promise<void> => {
       .map((c: Client) => c.options?.env ?? "dev")
       .join(", ");
     console.log(`\x1b[38;2;252;76;52m
-        ██╗  ██╗███╗   ███╗████████╗██████╗ 
+        ██╗  ██╗███╗   ███╗████████╗██████╗
         ╚██╗██╔╝████╗ ████║╚══██╔══╝██╔══██╗
          ╚███╔╝ ██╔████╔██║   ██║   ██████╔╝
-         ██╔██╗ ██║╚██╔╝██║   ██║   ██╔═══╝ 
-        ██╔╝ ██╗██║ ╚═╝ ██║   ██║   ██║     
-        ╚═╝  ╚═╝╚═╝     ╚═╝   ╚═╝   ╚═╝     
+         ██╔██╗ ██║╚██╔╝██║   ██║   ██╔═══╝
+        ██╔╝ ██╗██║ ╚═╝ ██║   ██║   ██║
+        ╚═╝  ╚═╝╚═╝     ╚═╝   ╚═╝   ╚═╝
       \x1b[0m`);
 
     const urls = [`http://xmtp.chat/dm/${address}`];
