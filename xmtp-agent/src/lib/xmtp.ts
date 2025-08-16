@@ -1,5 +1,5 @@
 import { ContentTypeWalletSendCalls } from "@xmtp/content-type-wallet-send-calls";
-import type { Client } from "@xmtp/node-sdk";
+import type { Conversation, DecodedMessage } from "@xmtp/node-sdk";
 import type { XMTPClient } from "@/helpers/get-client";
 import { USDCHandler } from "@/lib/usdc";
 
@@ -7,7 +7,7 @@ export class XMTPHandler {
   private client: XMTPClient;
   private usdcHandler: USDCHandler;
 
-  constructor(client: Client) {
+  constructor(client: XMTPClient) {
     this.client = client;
     this.usdcHandler = new USDCHandler();
   }
@@ -26,7 +26,7 @@ export class XMTPHandler {
     }
   }
 
-  private async handleMessage(message: any) {
+  private async handleMessage(message: DecodedMessage) {
     if (
       message.senderInboxId.toLowerCase() === this.client.inboxId.toLowerCase()
     ) {
@@ -76,7 +76,7 @@ export class XMTPHandler {
 
   private async processCommand(
     command: string,
-    conversation: any,
+    conversation: Conversation,
     memberAddress: string,
   ) {
     if (command === "/balance") {

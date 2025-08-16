@@ -2,18 +2,12 @@ import { getRandomValues } from "node:crypto";
 import fs from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
-import type { TransactionReferenceCodec } from "@xmtp/content-type-transaction-reference";
-import type { WalletSendCallsCodec } from "@xmtp/content-type-wallet-send-calls";
-import {
-  Client,
-  type ExtractCodecContentTypes,
-  IdentifierKind,
-  type Signer,
-} from "@xmtp/node-sdk";
+import { Client, IdentifierKind, type Signer } from "@xmtp/node-sdk";
 import { fromString, toString as uint8arraysToString } from "uint8arrays";
 import { createWalletClient, http, toBytes } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
+import type { XMTPClient } from "@/helpers/get-client";
 
 interface User {
   key: `0x${string}`;
@@ -84,15 +78,7 @@ export const getDbPath = (description: string = "xmtp") => {
   return `${volumePath}/${description}.db3`;
 };
 
-export const logAgentDetails = async (
-  clients:
-    | Client
-    | Client<
-        ExtractCodecContentTypes<
-          [WalletSendCallsCodec, TransactionReferenceCodec]
-        >
-      >,
-): Promise<void> => {
+export const logAgentDetails = async (clients: XMTPClient): Promise<void> => {
   const clientArray = Array.isArray(clients) ? clients : [clients];
   const clientsByAddress = clientArray.reduce<Record<string, Client[]>>(
     (acc, client) => {
