@@ -1,6 +1,6 @@
 import { TransactionReferenceCodec } from "@xmtp/content-type-transaction-reference";
 import { WalletSendCallsCodec } from "@xmtp/content-type-wallet-send-calls";
-import { Client } from "@xmtp/node-sdk";
+import { Client, type ExtractCodecContentTypes } from "@xmtp/node-sdk";
 import {
   createSigner,
   getDbPath,
@@ -8,7 +8,11 @@ import {
 } from "@/helpers/client";
 import { ENCRYPTION_KEY, WALLET_KEY, XMTP_ENV } from "@/lib/config";
 
-export const getXmtpClient = async () => {
+export type XMTPClient = Client<
+  ExtractCodecContentTypes<[WalletSendCallsCodec, TransactionReferenceCodec]>
+>;
+
+export const getXmtpClient = async (): Promise<XMTPClient> => {
   /* Create the signer using viem and parse the encryption key for the local db */
   const signer = createSigner(WALLET_KEY);
   const dbEncryptionKey = getEncryptionKeyFromHex(ENCRYPTION_KEY);
