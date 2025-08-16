@@ -1,31 +1,10 @@
-import { TransactionReferenceCodec } from "@xmtp/content-type-transaction-reference";
-import {
-  ContentTypeWalletSendCalls,
-  WalletSendCallsCodec,
-} from "@xmtp/content-type-wallet-send-calls";
-import { Client } from "@xmtp/node-sdk";
-import {
-  createSigner,
-  getDbPath,
-  getEncryptionKeyFromHex,
-  logAgentDetails,
-} from "@/helpers/client";
-import { ENCRYPTION_KEY, WALLET_KEY, XMTP_ENV } from "@/lib/config";
+import { ContentTypeWalletSendCalls } from "@xmtp/content-type-wallet-send-calls";
+import { logAgentDetails } from "@/helpers/client";
+import { getXmtpClient } from "@/helpers/get-client";
 import { USDCHandler } from "@/lib/usdc";
 
-/* Create the signer using viem and parse the encryption key for the local db */
-const signer = createSigner(WALLET_KEY);
-const dbEncryptionKey = getEncryptionKeyFromHex(ENCRYPTION_KEY);
-
-/* Initialize the xmtp client */
-export const client = await Client.create(signer, {
-  dbEncryptionKey,
-  env: XMTP_ENV,
-  codecs: [new WalletSendCallsCodec(), new TransactionReferenceCodec()],
-  dbPath: getDbPath("xmtp"),
-});
-
 async function main() {
+  const client = await getXmtpClient();
   const usdcHandler = new USDCHandler();
 
   // const identifier = await signer.getIdentifier();
