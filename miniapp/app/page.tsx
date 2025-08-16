@@ -19,12 +19,25 @@ import {
   WalletDropdownDisconnect,
 } from "@coinbase/onchainkit/wallet";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAccount } from "wagmi";
+import { useXMTP } from "../lib/hooks/useXMTP";
 import { Button, Features, Home, Icon } from "./components/DemoComponents";
+import { XMTPInfoCard } from "./components/XMTPInfoCard";
 
 export default function App() {
   const { setFrameReady, isFrameReady, context } = useMiniKit();
   const [frameAdded, setFrameAdded] = useState(false);
   const [activeTab, setActiveTab] = useState("home");
+
+  const { isConnected } = useAccount();
+  const {
+    client,
+    isLoading: xmtpLoading,
+    error: xmtpError,
+    showInfoCard,
+    isRegistered,
+    initializeClient,
+  } = useXMTP();
 
   const addFrame = useAddFrame();
   const openUrl = useOpenUrl();
@@ -67,6 +80,39 @@ export default function App() {
     return null;
   }, [context, frameAdded, handleAddFrame]);
 
+  const xmtpStatusDisplay = useMemo(() => {
+    if (!isConnected) return null;
+
+    if (xmtpLoading) {
+      return (
+        <div className="text-xs text-[var(--app-accent)] animate-pulse">
+          Initializing XMTP...
+        </div>
+      );
+    }
+
+    if (xmtpError) {
+      return (
+        <div className="text-xs text-red-500">XMTP Error: {xmtpError}</div>
+      );
+    }
+
+    if (client && isRegistered) {
+      return (
+        <div className="text-xs text-green-500 flex items-center space-x-1">
+          <Icon name="check" size="sm" />
+          <span>XMTP Ready</span>
+        </div>
+      );
+    }
+
+    return (
+      <div className="text-xs text-[var(--app-text-muted)]">
+        XMTP Setup Required
+      </div>
+    );
+  }, [isConnected, xmtpLoading, xmtpError, client, isRegistered]);
+
   return (
     <div className="flex flex-col min-h-screen font-sans text-[var(--app-foreground)] mini-app-theme from-[var(--app-background)] to-[var(--app-gray)]">
       <div className="w-full max-w-md mx-auto px-4 py-3">
@@ -88,6 +134,7 @@ export default function App() {
                 </WalletDropdown>
               </Wallet>
             </div>
+            {xmtpStatusDisplay}
           </div>
           <div>{saveFrameButton}</div>
         </header>
@@ -107,6 +154,8 @@ export default function App() {
             Built on Base with MiniKit
           </Button>
         </footer>
+
+        <XMTPInfoCard isOpen={showInfoCard} onContinue={initializeClient} />
       </div>
     </div>
   );
