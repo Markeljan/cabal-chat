@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:3131";
+const API_BASE_URL = "https://api.cabalchat.xyz";
 
 export interface CreateGroupRequest {
   name: string;
