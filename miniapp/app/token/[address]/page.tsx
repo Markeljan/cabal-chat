@@ -70,7 +70,7 @@ export async function generateMetadata({
   const dynamicImageUrl = `${baseUrl}/api/token-image?${imageParams.toString()}`;
 
   const miniapp = {
-    version: "1",
+    version: "next",
     imageUrl: dynamicImageUrl,
     button: {
       title: `Buy ${tokenData?.symbol || "Buy Token"}`,
