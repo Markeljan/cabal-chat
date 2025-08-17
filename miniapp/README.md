@@ -80,6 +80,7 @@ pnpm run dev
 
 - Custom theme defined in `theme.css` with OnchainKit variables
 - Pixel font integration with Pixelify Sans
+
 - Dark/light mode support through OnchainKit
 
 ### MiniKit Provider
