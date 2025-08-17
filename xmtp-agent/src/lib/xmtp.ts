@@ -1,7 +1,4 @@
-import {
-  ContentTypeWalletSendCalls,
-  type WalletSendCallsParams,
-} from "@xmtp/content-type-wallet-send-calls";
+import { ContentTypeWalletSendCalls } from "@xmtp/content-type-wallet-send-calls";
 import type { Conversation, DecodedMessage } from "@xmtp/node-sdk";
 import type { XMTPClient, XMTPClientContentTypes } from "@/helpers/get-client";
 import { promptAgent } from "@/lib/ai";
@@ -92,22 +89,6 @@ export class XMTPHandler {
       // If not a command, prompt the agent
       console.log("Prompting agent with message:", messageContent);
       const result = await promptAgent(messageContent);
-
-      // if has walletsendcalls tool result, send as walletsendcalls content type
-      console.log("Agent result:", result);
-
-      const toolResult = result.staticToolResults.find(
-        (toolResult) => toolResult.toolName === "createSwapQuote",
-      );
-      if (toolResult && toolResult.type === "tool-result") {
-        console.log("tool result", toolResult.output);
-        await conversation.send(
-          toolResult.output as WalletSendCallsParams,
-          ContentTypeWalletSendCalls,
-        );
-      } else {
-        await conversation.send(result.text);
-      }
 
       await conversation.send(result.text);
     }
