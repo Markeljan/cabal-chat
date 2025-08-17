@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import TokenPageClient from "./token-client";
 
 async function fetchTokenData(address: string) {

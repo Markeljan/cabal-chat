@@ -1,6 +1,5 @@
 import { cors } from "@elysiajs/cors";
 import { Elysia, t } from "elysia";
-import { getXmtpClient } from "@/helpers/get-client";
 import { GroupService } from "@/lib/group-service";
 import { createLeaderboardRoutes } from "@/lib/leaderboard-routes";
 import type { XMTPHandler } from "@/lib/xmtp";
@@ -50,17 +49,6 @@ export function createServer(xmtpHandler: XMTPHandler) {
         if (!group) {
           throw new Error("Group not found");
         }
-
-        const client = await getXmtpClient();
-        const conversationById = await client.conversations.getConversationById(
-          group.groupId,
-        );
-
-        if (conversationById) {
-          const memberList = await conversationById.members();
-          group.members = memberList.length || null;
-        }
-
         return { success: true, group };
       },
       {

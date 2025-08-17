@@ -17,24 +17,24 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  type GlobalStats,
-  type GroupLeaderboardEntry,
-  type LeaderboardSortBy,
-  leaderboardAPI,
-  type UserLeaderboardEntry,
-} from "@/lib/api/leaderboard";
+import { dbAdapter, type LeaderboardEntry } from "@/lib/db-adapter";
 import { formatAddress } from "@/lib/utils";
 
+type LeaderboardPeriod = "all" | "daily" | "weekly" | "monthly";
+type LeaderboardMetric = "volume" | "pnl" | "swaps";
+
+interface GlobalStats {
+  totalUsers: number;
+  totalGroups: number;
+  totalVolume: string;
+  totalSwaps: number;
+  avgPnl: string;
+}
+
 export function LeaderboardTabs() {
-  const [activeTab, setActiveTab] = useState<"users" | "groups">("users");
-  const [sortBy, setSortBy] = useState<LeaderboardSortBy>("volume");
-  const [userLeaderboard, setUserLeaderboard] = useState<
-    UserLeaderboardEntry[]
-  >([]);
-  const [groupLeaderboard, setGroupLeaderboard] = useState<
-    GroupLeaderboardEntry[]
-  >([]);
+  const [period, setPeriod] = useState<LeaderboardPeriod>("all");
+  const [metric, setMetric] = useState<LeaderboardMetric>("pnl");
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -42,15 +42,33 @@ export function LeaderboardTabs() {
     const loadData = async () => {
       setLoading(true);
       try {
-        const [stats] = await Promise.all([leaderboardAPI.getGlobalStats()]);
-        setGlobalStats(stats);
+        // Fetch leaderboard data
+        const response = await dbAdapter.getLeaderboard(period, metric, 50);
+        if (response.success && response.leaderboard) {
+          setLeaderboard(response.leaderboard);
 
-        if (activeTab === "users") {
-          const users = await leaderboardAPI.getUserLeaderboard(sortBy, 50);
-          setUserLeaderboard(users);
-        } else {
-          const groups = await leaderboardAPI.getGroupLeaderboard(sortBy, 50);
-          setGroupLeaderboard(groups);
+          // Calculate global stats from leaderboard data
+          const stats: GlobalStats = {
+            totalUsers: response.leaderboard.length,
+            totalGroups: 0, // Groups feature can be added later
+            totalVolume: response.leaderboard
+              .reduce((sum, entry) => sum + entry.totalVolume, 0)
+              .toFixed(2),
+            totalSwaps: response.leaderboard.reduce(
+              (sum, entry) => sum + entry.totalSwaps,
+              0,
+            ),
+            avgPnl:
+              response.leaderboard.length > 0
+                ? (
+                    response.leaderboard.reduce(
+                      (sum, entry) => sum + entry.totalPnl,
+                      0,
+                    ) / response.leaderboard.length
+                  ).toFixed(2)
+                : "0",
+          };
+          setGlobalStats(stats);
         }
       } catch (error) {
         console.error("Failed to load leaderboard data:", error);
@@ -59,7 +77,7 @@ export function LeaderboardTabs() {
       }
     };
     loadData();
-  }, [activeTab, sortBy]);
+  }, [period, metric]);
 
   const formatUSD = (value: string): string => {
     const num = parseFloat(value);
@@ -71,19 +89,16 @@ export function LeaderboardTabs() {
     return `$${num.toFixed(2)}`;
   };
 
-  const formatPercent = (value: string): string => {
-    const num = parseFloat(value);
-    return `${num >= 0 ? "+" : ""}${num.toFixed(2)}%`;
+  const formatPercent = (value: number): string => {
+    return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
   };
 
-  const getPnlColor = (value: string): string => {
-    const num = parseFloat(value);
-    return num >= 0 ? "text-green-500" : "text-red-500";
+  const getPnlColor = (value: number): string => {
+    return value >= 0 ? "text-green-500" : "text-red-500";
   };
 
-  const getPnlIcon = (value: string) => {
-    const num = parseFloat(value);
-    return num >= 0 ? (
+  const getPnlIcon = (value: number) => {
+    return value >= 0 ? (
       <TrendingUp className="w-4 h-4" />
     ) : (
       <TrendingDown className="w-4 h-4" />
@@ -165,11 +180,11 @@ export function LeaderboardTabs() {
               <div className="flex items-center space-x-2">
                 <TrendingUp className="w-5 h-5 text-muted-foreground" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Total PNL</p>
+                  <p className="text-sm text-muted-foreground">Avg PNL</p>
                   <p
-                    className={`text-xl font-bold ${getPnlColor(globalStats.totalPnl)}`}
+                    className={`text-xl font-bold ${getPnlColor(parseFloat(globalStats.avgPnl))}`}
                   >
-                    {formatUSD(globalStats.totalPnl)}
+                    {formatUSD(globalStats.avgPnl)}
                   </p>
                 </div>
               </div>
@@ -189,58 +204,53 @@ export function LeaderboardTabs() {
               </CardTitle>
               <CardDescription>
                 Top performers by{" "}
-                {sortBy === "volume"
-                  ? "Volume"
-                  : sortBy === "pnl"
-                    ? "PNL (USD)"
-                    : sortBy === "pnlPercent"
-                      ? "PNL (%)"
-                      : "Swap Count"}
+                {metric === "volume"
+                  ? "Trading Volume"
+                  : metric === "pnl"
+                    ? "Profit & Loss"
+                    : "Swap Count"}
+                {" - "}
+                {period === "daily"
+                  ? "Last 24 Hours"
+                  : period === "weekly"
+                    ? "Last 7 Days"
+                    : period === "monthly"
+                      ? "Last 30 Days"
+                      : "All Time"}
               </CardDescription>
             </div>
             <div className="flex gap-2">
-              <Button
-                variant={activeTab === "users" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setActiveTab("users")}
+              <select
+                className="px-3 py-1 text-sm border rounded-md"
+                value={period}
+                onChange={(e) => setPeriod(e.target.value as LeaderboardPeriod)}
               >
-                Users
-              </Button>
-              <Button
-                variant={activeTab === "groups" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setActiveTab("groups")}
-              >
-                Groups
-              </Button>
+                <option value="all">All Time</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
             </div>
           </div>
           <div className="flex gap-2 mt-4">
             <Button
-              variant={sortBy === "volume" ? "default" : "outline"}
+              variant={metric === "volume" ? "default" : "outline"}
               size="sm"
-              onClick={() => setSortBy("volume")}
+              onClick={() => setMetric("volume")}
             >
               Volume
             </Button>
             <Button
-              variant={sortBy === "pnl" ? "default" : "outline"}
+              variant={metric === "pnl" ? "default" : "outline"}
               size="sm"
-              onClick={() => setSortBy("pnl")}
+              onClick={() => setMetric("pnl")}
             >
-              PNL ($)
+              PNL
             </Button>
             <Button
-              variant={sortBy === "pnlPercent" ? "default" : "outline"}
+              variant={metric === "swaps" ? "default" : "outline"}
               size="sm"
-              onClick={() => setSortBy("pnlPercent")}
-            >
-              PNL (%)
-            </Button>
-            <Button
-              variant={sortBy === "swaps" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSortBy("swaps")}
+              onClick={() => setMetric("swaps")}
             >
               Swaps
             </Button>
@@ -249,88 +259,51 @@ export function LeaderboardTabs() {
         <CardContent>
           {loading ? (
             <div className="text-center py-8">Loading...</div>
-          ) : activeTab === "users" ? (
-            <div className="space-y-2">
-              {userLeaderboard.map((user) => (
-                <div
-                  key={user.address}
-                  className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="text-lg font-bold w-8">
-                      {getRankEmoji(user.rank) || `#${user.rank}`}
-                    </div>
-                    {user.avatarUrl && (
-                      <img
-                        src={user.avatarUrl}
-                        alt=""
-                        className="w-8 h-8 rounded-full"
-                      />
-                    )}
-                    <div>
-                      <p className="font-medium">
-                        {user.username || formatAddress(user.address)}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {user.totalSwaps} swaps • Avg:{" "}
-                        {formatUSD(user.avgSwapSize)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold">{formatUSD(user.totalVolume)}</p>
-                    <div
-                      className={`flex items-center gap-1 justify-end ${getPnlColor(user.totalPnlUsd)}`}
-                    >
-                      {getPnlIcon(user.totalPnlUsd)}
-                      <span className="text-sm">
-                        {formatUSD(user.totalPnlUsd)} (
-                        {formatPercent(user.totalPnlPercent)})
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
           ) : (
             <div className="space-y-2">
-              {groupLeaderboard.map((group) => (
+              {leaderboard.map((entry) => (
                 <div
-                  key={group.groupId}
+                  key={entry.address}
                   className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <div className="text-lg font-bold w-8">
-                      {getRankEmoji(group.rank) || `#${group.rank}`}
+                      {getRankEmoji(entry.rank) || `#${entry.rank}`}
                     </div>
-                    {group.imageUrl && (
-                      <img
-                        src={group.imageUrl}
-                        alt=""
-                        className="w-8 h-8 rounded-full"
-                      />
-                    )}
                     <div>
-                      <p className="font-medium">{group.name}</p>
+                      <p className="font-medium">
+                        {entry.username || formatAddress(entry.address)}
+                      </p>
                       <p className="text-sm text-muted-foreground">
-                        {group.memberCount} members • {group.totalSwaps} swaps
+                        {entry.totalSwaps} swaps • Win rate:{" "}
+                        {entry.winRate.toFixed(1)}%
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold">{formatUSD(group.totalVolume)}</p>
+                    <p className="font-bold">
+                      {metric === "volume"
+                        ? formatUSD(entry.totalVolume.toString())
+                        : metric === "swaps"
+                          ? entry.totalSwaps
+                          : formatUSD(entry.totalPnl.toString())}
+                    </p>
                     <div
-                      className={`flex items-center gap-1 justify-end ${getPnlColor(group.totalPnlUsd)}`}
+                      className={`flex items-center gap-1 justify-end ${getPnlColor(entry.totalPnl)}`}
                     >
-                      {getPnlIcon(group.totalPnlUsd)}
+                      {getPnlIcon(entry.totalPnl)}
                       <span className="text-sm">
-                        {formatUSD(group.totalPnlUsd)} (
-                        {formatPercent(group.totalPnlPercent)})
+                        {formatPercent(entry.avgPnlPercentage)}
                       </span>
                     </div>
                   </div>
                 </div>
               ))}
+              {leaderboard.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  No data available for the selected period
+                </div>
+              )}
             </div>
           )}
         </CardContent>

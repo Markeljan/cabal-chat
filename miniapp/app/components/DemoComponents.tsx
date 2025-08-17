@@ -17,11 +17,11 @@ import { useAccount } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  dbAdapter,
   type Group,
   type GroupResponse,
   type GroupsResponse,
-  groupApi,
-} from "@/lib/group-api";
+} from "@/lib/db-adapter";
 import { cn } from "@/lib/utils";
 
 export {
@@ -93,7 +93,7 @@ function GroupCreation({ onGroupCreated }: { onGroupCreated?: () => void }) {
     setError(null);
 
     try {
-      const result = await groupApi.createGroup({
+      const result = await dbAdapter.createGroup({
         name: groupName.trim(),
         description: groupDescription.trim() || undefined,
         createdBy: address,
@@ -284,7 +284,7 @@ function ProfileTab() {
     setError(null);
 
     try {
-      const result: GroupsResponse = await groupApi.getUserGroups(address);
+      const result: GroupsResponse = await dbAdapter.getUserGroups(address);
 
       if (result.success && result.groups) {
         setJoinedGroups(result.groups);
@@ -444,7 +444,7 @@ function CabalDetails({
       setError(null);
 
       try {
-        const result: GroupResponse = await groupApi.getGroupDetails(cabalId);
+        const result: GroupResponse = await dbAdapter.getGroupDetails(cabalId);
 
         if (result.success && result.group) {
           setCabal(result.group);
@@ -452,7 +452,7 @@ function CabalDetails({
           if (address) {
             setMembershipLoading(true);
             try {
-              const membershipResult = (await groupApi.checkMembership(
+              const membershipResult = (await dbAdapter.checkMembership(
                 cabalId,
                 address,
               )) as { success: boolean; member?: { isActive: boolean } };
@@ -486,7 +486,7 @@ function CabalDetails({
     setIsJoining(true);
 
     try {
-      const result = await groupApi.joinGroup(cabalId, address);
+      const result = await dbAdapter.joinGroup(cabalId, address);
 
       if (result.success) {
         setIsMember(true);
@@ -724,7 +724,7 @@ function GroupLeaderboard({
     setError(null);
 
     try {
-      const result: GroupsResponse = await groupApi.getAllGroups();
+      const result: GroupsResponse = await dbAdapter.getAllGroups();
 
       if (result.success && result.groups) {
         setGroups(result.groups);

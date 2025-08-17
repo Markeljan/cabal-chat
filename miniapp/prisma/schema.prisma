@@ -1,0 +1,135 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  address     String   @unique // Ethereum address
+  username    String?
+  avatarUrl   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Stats
+  totalVolume     Decimal  @default(0) @db.Decimal(20, 6)
+  totalSwaps      Int      @default(0)
+  totalPnlUsd     Decimal  @default(0) @db.Decimal(20, 6)
+  totalPnlPercent Decimal  @default(0) @db.Decimal(10, 4)
+
+  // Relations
+  swaps           Swap[]
+  groupMembers    GroupMember[]
+  createdGroups   Group[]       @relation("GroupCreator")
+}
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  imageUrl    String?
+  groupId     String   @unique // XMTP group ID
+  createdBy   String   // Address of the user who created the group
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Stats
+  totalVolume     Decimal  @default(0) @db.Decimal(20, 6)
+  totalSwaps      Int      @default(0)
+  totalPnlUsd     Decimal  @default(0) @db.Decimal(20, 6)
+  totalPnlPercent Decimal  @default(0) @db.Decimal(10, 4)
+
+  // Metadata fields
+  metadata    Json?    // Additional metadata about the group
+  isActive    Boolean  @default(true)
+
+  // Relations
+  creator     User          @relation("GroupCreator", fields: [createdBy], references: [address])
+  members     GroupMember[]
+  swaps       Swap[]
+}
+
+model GroupMember {
+  id        String   @id @default(cuid())
+  groupId   String   // References Group.groupId (XMTP group ID)
+  address   String   // Ethereum address of the member
+  joinedAt  DateTime @default(now())
+  isActive  Boolean  @default(true)
+
+  // Member stats within the group
+  volumeInGroup   Decimal  @default(0) @db.Decimal(20, 6)
+  swapsInGroup    Int      @default(0)
+  pnlInGroupUsd   Decimal  @default(0) @db.Decimal(20, 6)
+
+  // Relations
+  group     Group    @relation(fields: [groupId], references: [groupId], onDelete: Cascade)
+  user      User     @relation(fields: [address], references: [address])
+
+  @@unique([groupId, address])
+  @@index([address])
+}
+
+model Swap {
+  id              String   @id @default(cuid())
+  userAddress     String   // User who performed the swap
+  groupId         String?  // Group where swap was initiated (nullable for DMs)
+  
+  // Token details
+  fromToken       String   // Token address or symbol
+  toToken         String   // Token address or symbol
+  fromAmount      Decimal  @db.Decimal(20, 6)
+  toAmount        Decimal  @db.Decimal(20, 6)
+  
+  // USD values at time of swap
+  fromAmountUsd   Decimal  @db.Decimal(20, 6)
+  toAmountUsd     Decimal  @db.Decimal(20, 6)
+  
+  // Current values for PNL calculation
+  currentValueUsd Decimal  @default(0) @db.Decimal(20, 6)
+  pnlUsd          Decimal  @default(0) @db.Decimal(20, 6)
+  pnlPercent      Decimal  @default(0) @db.Decimal(10, 4)
+  
+  // Transaction details
+  txHash          String?  @unique
+  status          SwapStatus @default(PENDING)
+  gasUsed         Decimal? @db.Decimal(20, 6)
+  gasPrice        Decimal? @db.Decimal(20, 6)
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  completedAt     DateTime?
+  
+  // Relations
+  user            User     @relation(fields: [userAddress], references: [address])
+  group           Group?   @relation(fields: [groupId], references: [groupId])
+  
+  @@index([userAddress])
+  @@index([groupId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum SwapStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model TokenPrice {
+  id          String   @id @default(cuid())
+  tokenAddress String
+  symbol      String
+  priceUsd    Decimal  @db.Decimal(20, 6)
+  timestamp   DateTime @default(now())
+  
+  @@index([tokenAddress, timestamp])
+  @@index([symbol, timestamp])
+}

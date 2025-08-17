@@ -166,7 +166,7 @@ export default function TokenPageClient() {
 
           {/* Trade Button */}
           <div className="pb-8">
-            <Buy toToken={data} isSponsored={true} />
+            <Buy toToken={data} />
           </div>
         </div>
       )}

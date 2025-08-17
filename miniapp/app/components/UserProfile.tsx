@@ -7,7 +7,6 @@ import {
   TrendingDown,
   TrendingUp,
   Trophy,
-  Users,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -17,7 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { leaderboardAPI } from "@/lib/api/leaderboard";
+import { dbAdapter, type Swap, type UserStats } from "@/lib/db-adapter";
 import { formatAddress } from "@/lib/utils";
 
 interface UserProfileProps {
@@ -25,15 +24,26 @@ interface UserProfileProps {
 }
 
 export function UserProfile({ address }: UserProfileProps) {
-  const [userStats, setUserStats] = useState<any>(null);
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [recentSwaps, setRecentSwaps] = useState<Swap[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadUserStats = async () => {
       setLoading(true);
       try {
-        const stats = await leaderboardAPI.getUserStats(address);
-        setUserStats(stats);
+        const [statsResponse, swapsResponse] = await Promise.all([
+          dbAdapter.getUserStats(address),
+          dbAdapter.getUserSwaps(address, 10, 0),
+        ]);
+
+        if (statsResponse.success && statsResponse.stats) {
+          setUserStats(statsResponse.stats);
+        }
+
+        if (swapsResponse.success && swapsResponse.swaps) {
+          setRecentSwaps(swapsResponse.swaps);
+        }
       } catch (error) {
         console.error("Failed to load user stats:", error);
       } finally {
@@ -53,14 +63,12 @@ export function UserProfile({ address }: UserProfileProps) {
     return `$${num.toFixed(2)}`;
   };
 
-  const formatPercent = (value: string): string => {
-    const num = parseFloat(value);
-    return `${num >= 0 ? "+" : ""}${num.toFixed(2)}%`;
+  const formatPercent = (value: number): string => {
+    return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
   };
 
-  const getPnlColor = (value: string): string => {
-    const num = parseFloat(value);
-    return num >= 0 ? "text-green-500" : "text-red-500";
+  const getPnlColor = (value: number): string => {
+    return value >= 0 ? "text-green-500" : "text-red-500";
   };
 
   const formatDate = (date: string): string => {
@@ -88,7 +96,8 @@ export function UserProfile({ address }: UserProfileProps) {
     );
   }
 
-  const { user, rank, recentSwaps, bestSwap, worstSwap, groups } = userStats;
+  // Calculate rank from leaderboard position (can be fetched separately if needed)
+  const rank = 1; // Default rank, should be fetched from leaderboard API
 
   return (
     <div className="space-y-6">
@@ -97,16 +106,9 @@ export function UserProfile({ address }: UserProfileProps) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              {user.avatarUrl && (
-                <img
-                  src={user.avatarUrl}
-                  alt=""
-                  className="w-16 h-16 rounded-full"
-                />
-              )}
               <div>
                 <CardTitle className="text-2xl">
-                  {user.username || formatAddress(address)}
+                  {formatAddress(address)}
                 </CardTitle>
                 <CardDescription className="flex items-center gap-2 mt-1">
                   <Trophy className="w-4 h-4" />
@@ -127,7 +129,7 @@ export function UserProfile({ address }: UserProfileProps) {
               <div>
                 <p className="text-sm text-muted-foreground">Total Volume</p>
                 <p className="text-xl font-bold">
-                  {formatUSD(user.totalVolume)}
+                  {formatUSD(userStats.totalVolume.toString())}
                 </p>
               </div>
             </div>
@@ -139,7 +141,7 @@ export function UserProfile({ address }: UserProfileProps) {
               <Activity className="w-5 h-5 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">Total Swaps</p>
-                <p className="text-xl font-bold">{user.totalSwaps}</p>
+                <p className="text-xl font-bold">{userStats.totalSwaps}</p>
               </div>
             </div>
           </CardContent>
@@ -151,9 +153,9 @@ export function UserProfile({ address }: UserProfileProps) {
               <div>
                 <p className="text-sm text-muted-foreground">Total PNL</p>
                 <p
-                  className={`text-xl font-bold ${getPnlColor(user.totalPnlUsd)}`}
+                  className={`text-xl font-bold ${getPnlColor(userStats.totalPnl)}`}
                 >
-                  {formatUSD(user.totalPnlUsd)}
+                  {formatUSD(userStats.totalPnl.toString())}
                 </p>
               </div>
             </div>
@@ -166,9 +168,9 @@ export function UserProfile({ address }: UserProfileProps) {
               <div>
                 <p className="text-sm text-muted-foreground">PNL %</p>
                 <p
-                  className={`text-xl font-bold ${getPnlColor(user.totalPnlPercent)}`}
+                  className={`text-xl font-bold ${getPnlColor(userStats.avgPnlPercentage)}`}
                 >
-                  {formatPercent(user.totalPnlPercent)}
+                  {formatPercent(userStats.avgPnlPercentage)}
                 </p>
               </div>
             </div>
@@ -177,9 +179,9 @@ export function UserProfile({ address }: UserProfileProps) {
       </div>
 
       {/* Best and Worst Swaps */}
-      {(bestSwap || worstSwap) && (
+      {(userStats.bestSwap || userStats.worstSwap) && (
         <div className="grid md:grid-cols-2 gap-4">
-          {bestSwap && (
+          {userStats.bestSwap && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -191,24 +193,24 @@ export function UserProfile({ address }: UserProfileProps) {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">From</span>
-                    <span>{bestSwap.fromToken}</span>
+                    <span>{userStats.bestSwap.fromToken}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">To</span>
-                    <span>{bestSwap.toToken}</span>
+                    <span>{userStats.bestSwap.toToken}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">PNL</span>
                     <span className="text-green-500 font-bold">
-                      {formatUSD(bestSwap.pnlUsd)} (
-                      {formatPercent(bestSwap.pnlPercent)})
+                      {formatUSD((userStats.bestSwap.pnl || 0).toString())} (
+                      {formatPercent(userStats.bestSwap.pnlPercentage || 0)})
                     </span>
                   </div>
                 </div>
               </CardContent>
             </Card>
           )}
-          {worstSwap && (
+          {userStats.worstSwap && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -220,17 +222,17 @@ export function UserProfile({ address }: UserProfileProps) {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">From</span>
-                    <span>{worstSwap.fromToken}</span>
+                    <span>{userStats.worstSwap.fromToken}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">To</span>
-                    <span>{worstSwap.toToken}</span>
+                    <span>{userStats.worstSwap.toToken}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">PNL</span>
                     <span className="text-red-500 font-bold">
-                      {formatUSD(worstSwap.pnlUsd)} (
-                      {formatPercent(worstSwap.pnlPercent)})
+                      {formatUSD((userStats.worstSwap.pnl || 0).toString())} (
+                      {formatPercent(userStats.worstSwap.pnlPercentage || 0)})
                     </span>
                   </div>
                 </div>
@@ -241,79 +243,67 @@ export function UserProfile({ address }: UserProfileProps) {
       )}
 
       {/* Recent Swaps */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="w-5 h-5" />
-            Recent Swaps
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {recentSwaps.map((swap: any) => (
-              <div
-                key={swap.id}
-                className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
-              >
-                <div>
-                  <p className="font-medium">
-                    {swap.fromToken} → {swap.toToken}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {formatDate(swap.createdAt)}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-medium">{formatUSD(swap.fromAmountUsd)}</p>
-                  <p className={`text-sm ${getPnlColor(swap.pnlUsd)}`}>
-                    {formatUSD(swap.pnlUsd)} ({formatPercent(swap.pnlPercent)})
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Groups */}
-      {groups.length > 0 && (
+      {recentSwaps.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Groups
+              <Clock className="w-5 h-5" />
+              Recent Swaps
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {groups.map((group: any) => (
+              {recentSwaps.map((swap) => (
                 <div
-                  key={group.id}
+                  key={swap.id}
                   className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
                 >
-                  <div className="flex items-center gap-3">
-                    {group.imageUrl && (
-                      <img
-                        src={group.imageUrl}
-                        alt=""
-                        className="w-10 h-10 rounded-full"
-                      />
-                    )}
-                    <div>
-                      <p className="font-medium">{group.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {group.swapsInGroup} swaps
-                      </p>
-                    </div>
+                  <div>
+                    <p className="font-medium">
+                      {swap.fromToken} → {swap.toToken}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {formatDate(swap.createdAt)}
+                    </p>
                   </div>
                   <div className="text-right">
                     <p className="font-medium">
-                      {formatUSD(group.volumeInGroup)}
+                      {formatUSD(swap.fromAmountUsd.toString())}
                     </p>
-                    <p
-                      className={`text-sm ${getPnlColor(group.pnlInGroupUsd)}`}
-                    >
-                      PNL: {formatUSD(group.pnlInGroupUsd)}
+                    <p className={`text-sm ${getPnlColor(swap.pnl || 0)}`}>
+                      {formatUSD((swap.pnl || 0).toString())} (
+                      {formatPercent(swap.pnlPercentage || 0)})
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Favorite Tokens */}
+      {userStats.favoriteTokens && userStats.favoriteTokens.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="w-5 h-5" />
+              Favorite Tokens
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {userStats.favoriteTokens.map((token) => (
+                <div
+                  key={token.token}
+                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                >
+                  <div>
+                    <p className="font-medium">{token.token}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground">
+                      {token.count} trades
                     </p>
                   </div>
                 </div>
