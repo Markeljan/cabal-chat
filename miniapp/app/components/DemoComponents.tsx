@@ -883,6 +883,10 @@ function CabalDetails({
   const [cabal, setCabal] = useState<Group | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isMember, setIsMember] = useState(false);
+  const [isJoining, setIsJoining] = useState(false);
+  const [membershipLoading, setMembershipLoading] = useState(false);
+  const { address } = useAccount();
 
   useEffect(() => {
     const fetchCabalDetails = async () => {
@@ -894,6 +898,25 @@ function CabalDetails({
 
         if (result.success && result.group) {
           setCabal(result.group);
+
+          if (address) {
+            setMembershipLoading(true);
+            try {
+              const membershipResult = await groupApi.checkMembership(
+                cabalId,
+                address,
+              );
+              setIsMember(
+                (membershipResult.success &&
+                  membershipResult.member?.isActive) ||
+                  false,
+              );
+            } catch (_err) {
+              setIsMember(false);
+            } finally {
+              setMembershipLoading(false);
+            }
+          }
         } else {
           setError(result.error || "Failed to fetch cabal details");
         }
@@ -905,7 +928,27 @@ function CabalDetails({
     };
 
     fetchCabalDetails();
-  }, [cabalId]);
+  }, [cabalId, address]);
+
+  const handleJoinCabal = async () => {
+    if (!address || isJoining || isMember) return;
+
+    setIsJoining(true);
+
+    try {
+      const result = await groupApi.joinGroup(cabalId, address);
+
+      if (result.success) {
+        setIsMember(true);
+      } else {
+        setError(result.error || "Failed to join cabal");
+      }
+    } catch (_err) {
+      setError("Network error occurred");
+    } finally {
+      setIsJoining(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -997,7 +1040,7 @@ function CabalDetails({
           <div className="flex items-center space-x-4 text-sm text-[var(--app-foreground-muted)]">
             <span className="flex items-center">
               <Icon name="users" size="sm" className="mr-1" />
-              {cabal.memberCount || 0} members
+              {cabal.members || 0} members
             </span>
             <span>
               Created {new Date(cabal.createdAt).toLocaleDateString()}
@@ -1069,9 +1112,29 @@ function CabalDetails({
       </Card>
 
       <div className="pt-4">
-        <Button className="w-full" icon={<Icon name="users" size="sm" />}>
-          Join Cabal
-        </Button>
+        {address ? (
+          <Button
+            className="w-full"
+            icon={<Icon name="users" size="sm" />}
+            variant={isMember ? "secondary" : "primary"}
+            disabled={isJoining || membershipLoading}
+            onClick={handleJoinCabal}
+          >
+            {isJoining
+              ? "Joining..."
+              : membershipLoading
+                ? "Checking..."
+                : isMember
+                  ? "Already Joined"
+                  : "Join Cabal"}
+          </Button>
+        ) : (
+          <div className="text-center py-4">
+            <p className="text-[var(--app-foreground-muted)]">
+              Connect your wallet to join this cabal
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1111,10 +1174,6 @@ function GroupLeaderboard({
   useEffect(() => {
     fetchGroups();
   }, [fetchGroups, refreshTrigger]);
-
-  const toggleJoinGroup = (groupId: string) => {
-    console.log("Toggle join group:", groupId);
-  };
 
   const getRankIcon = (index: number) => {
     const rank = index + 1;
@@ -1237,17 +1296,6 @@ function GroupLeaderboard({
                     Created {new Date(group.createdAt).toLocaleDateString()}
                   </span>
                 </div>
-
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={(e) => {
-                    e?.stopPropagation();
-                    toggleJoinGroup(group.id);
-                  }}
-                >
-                  Join
-                </Button>
               </div>
             </Card>
           ))}

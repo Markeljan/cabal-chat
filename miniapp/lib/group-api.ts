@@ -17,7 +17,7 @@ export interface Group {
   metadata?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
-  memberCount?: number;
+  members?: number;
   performance?: number;
 }
 
@@ -86,6 +86,25 @@ class GroupApiService {
     return this.request<Group[]>(
       `/users/${address}/groups`,
     ) as Promise<GroupsResponse>;
+  }
+
+  async joinGroup(
+    groupId: string,
+    userWallet: string,
+  ): Promise<ApiResponse<null>> {
+    return this.request<null>(`/groups/${groupId}/join`, {
+      method: "POST",
+      body: JSON.stringify({ userWallet }),
+    });
+  }
+
+  async checkMembership(
+    groupId: string,
+    userWallet: string,
+  ): Promise<ApiResponse<{ isMember: boolean }>> {
+    return this.request<{ isMember: boolean }>(
+      `/groups/${groupId}/members/${userWallet}`,
+    );
   }
 }
 
