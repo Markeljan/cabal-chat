@@ -15,6 +15,7 @@ import {
 } from "@coinbase/onchainkit/wallet";
 import { useMemo, useState } from "react";
 import { useAccount } from "wagmi";
+import { Transact } from "@/app/components/transact";
 import { useXMTP } from "../lib/hooks/useXMTP";
 import {
   BottomNavigation,
@@ -99,6 +100,7 @@ export default function App() {
         </header>
 
         <main className="flex-1">
+          <Transact />
           {selectedCabalId ? (
             <CabalDetails
               cabalId={selectedCabalId}
@@ -120,9 +122,7 @@ export default function App() {
                   }}
                 />
               )}
-              {activeTab === "profile" && (
-                <ProfileTab refreshTrigger={refreshTrigger} />
-              )}
+              {activeTab === "profile" && <ProfileTab />}
             </>
           )}
         </main>

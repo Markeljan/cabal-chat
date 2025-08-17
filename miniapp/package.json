@@ -13,12 +13,18 @@
   "dependencies": {
     "@coinbase/onchainkit": "0.38.19",
     "@farcaster/miniapp-sdk": "^0.1.8",
+    "@radix-ui/react-slot": "^1.2.3",
     "@tanstack/react-query": "^5.84.2",
     "@upstash/redis": "^1.35.3",
     "@xmtp/browser-sdk": "^4.0.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.539.0",
     "next": "^15.4.6",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "tailwind-merge": "^3.3.1",
+    "tailwindcss-animate": "^1.0.7",
     "viem": "^2.33.3",
     "wagmi": "^2.16.2"
   },
