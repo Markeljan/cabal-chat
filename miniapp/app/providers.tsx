@@ -1,15 +1,15 @@
-// @noErrors: 2307 2580 2339 - cannot find 'process', cannot find './wagmi', cannot find 'import.meta'
-'use client';
+"use client";
 
-import type { ReactNode } from 'react';
-import { OnchainKitProvider } from '@coinbase/onchainkit';
-import { base } from 'wagmi/chains'; // add baseSepolia for testing
+import { OnchainKitProvider } from "@coinbase/onchainkit";
+import type { ReactNode } from "react";
+import { base } from "wagmi/chains";
 
 export function Providers(props: { children: ReactNode }) {
   return (
     <OnchainKitProvider
       apiKey={process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY}
-      chain={base} // add baseSepolia for testing
+      chain={base}
+      projectId={process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_ID}
     >
       {props.children}
     </OnchainKitProvider>
