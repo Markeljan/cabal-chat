@@ -68,7 +68,6 @@ export default function App() {
     if (client && isRegistered) {
       return (
         <div className="text-xs text-green-500 flex items-center space-x-1">
-          {/*<Icon name="check" size="sm" />*/}
           <span>XMTP Ready</span>
         </div>
       );

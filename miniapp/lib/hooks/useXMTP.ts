@@ -1,5 +1,3 @@
-"use client";
-
 import type { Client } from "@xmtp/browser-sdk";
 import { useCallback, useEffect, useState } from "react";
 import { useAccount, useWalletClient } from "wagmi";
