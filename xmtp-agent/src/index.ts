@@ -13,7 +13,7 @@ async function main() {
   const app = createServer(xmtpHandler);
 
   app.listen(3131, () => {
-    console.log("🚀 Elysia server running on http://localhost:3131");
+    console.log("🚀 Elysia server running on port 3131");
   });
 
   await xmtpHandler.startMessageStream();
