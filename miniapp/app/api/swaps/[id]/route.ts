@@ -1,13 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const { id } = await params;
     const swap = await prisma.swap.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!swap) {
@@ -36,12 +37,13 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await params;
   try {
     const body = await request.json();
 
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (body.status) updateData.status = body.status;
     if (body.txHash) updateData.txHash = body.txHash;
     if (body.completedAt) updateData.completedAt = new Date(body.completedAt);
@@ -52,7 +54,7 @@ export async function PATCH(
       updateData.currentValueUsd = body.currentValueUsd;
 
     const swap = await prisma.swap.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
     });
 

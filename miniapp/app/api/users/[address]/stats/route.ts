@@ -3,10 +3,11 @@ import prisma from "@/lib/prisma";
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { address: string } },
+  { params }: { params: Promise<{ address: string }> },
 ) {
+  const { address } = await params;
   try {
-    const userAddress = params.address.toLowerCase();
+    const userAddress = address.toLowerCase();
 
     // Get all user swaps
     const swaps = await prisma.swap.findMany({
@@ -77,7 +78,7 @@ export async function GET(
       .map(([token, count]) => ({ token, count }));
 
     const stats = {
-      address: params.address,
+      address,
       totalSwaps,
       totalVolume,
       totalPnl,

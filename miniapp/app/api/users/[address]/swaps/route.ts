@@ -3,13 +3,14 @@ import prisma from "@/lib/prisma";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { address: string } },
+  { params }: { params: Promise<{ address: string }> },
 ) {
+  const { address } = await params;
   try {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "100");
     const offset = parseInt(searchParams.get("offset") || "0");
-    const userAddress = params.address.toLowerCase();
+    const userAddress = address.toLowerCase();
 
     const swaps = await prisma.swap.findMany({
       where: {

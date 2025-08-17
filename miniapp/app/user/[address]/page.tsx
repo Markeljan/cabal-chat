@@ -1,15 +1,14 @@
 import { UserProfile } from "@/app/components/UserProfile";
 
 interface UserPageProps {
-  params: {
-    address: string;
-  };
+  params: Promise<{ address: string }>;
 }
 
-export default function UserPage({ params }: UserPageProps) {
+export default async function UserPage({ params }: UserPageProps) {
+  const { address } = await params;
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <UserProfile address={params.address} />
+      <UserProfile address={address} />
     </div>
   );
 }
