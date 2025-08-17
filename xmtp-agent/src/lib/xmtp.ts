@@ -2,16 +2,19 @@ import { ContentTypeWalletSendCalls } from "@xmtp/content-type-wallet-send-calls
 import type { Conversation, DecodedMessage } from "@xmtp/node-sdk";
 import type { XMTPClient, XMTPClientContentTypes } from "@/helpers/get-client";
 import { promptAgent } from "@/lib/ai";
+import { BalanceService } from "@/lib/balance";
 import { swapHandler } from "@/lib/swap-handler";
 import { USDCHandler } from "@/lib/usdc";
 
 export class XMTPHandler {
   private client: XMTPClient;
   private usdcHandler: USDCHandler;
+  private balanceService: BalanceService;
 
   constructor(client: XMTPClient) {
     this.client = client;
     this.usdcHandler = new USDCHandler();
+    this.balanceService = new BalanceService();
   }
 
   async initialize() {
@@ -129,8 +132,8 @@ export class XMTPHandler {
     const command = input.toLowerCase();
 
     // Define valid commands and their handlers
-    if (command === "/balance") {
-      await this.handleBalanceCommand(conversation, memberAddress);
+    if (command.startsWith("/balance")) {
+      await this.handleBalanceCommand(input, conversation, memberAddress);
     } else if (command.startsWith("/tx ")) {
       await this.handleTransactionCommand(command, conversation, memberAddress);
     } else if (command.startsWith("/swap")) {
@@ -146,11 +149,26 @@ export class XMTPHandler {
   }
 
   private async handleBalanceCommand(
+    input: string,
     conversation: Conversation,
     memberAddress: string,
   ) {
-    const result = await this.usdcHandler.getUSDCBalance(memberAddress);
-    await conversation.send(`Your USDC balance is: ${result} USDC`);
+    const parts = input.trim().split(/\s+/);
+    let address = memberAddress;
+    let tokenAddress: string | undefined;
+
+    if (parts.length >= 2) {
+      address = parts[1];
+    }
+    if (parts.length >= 3) {
+      tokenAddress = parts[2];
+    }
+
+    const { amount, symbol } = await this.balanceService.getTokenBalance(
+      address,
+      tokenAddress,
+    );
+    await conversation.send(`Balance: ${amount} ${symbol}`);
   }
 
   private async handleTransactionCommand(
@@ -229,7 +247,7 @@ export class XMTPHandler {
     const helpMessage = [
       "Available commands:",
       "",
-      "/balance - Check your USDC balance",
+      "/balance [address] [token] - Check a token balance",
       "/tx <amount> - Get a transaction to receive USDC",
       "/swap - Start swapping tokens",
       "/swap <amount> <from> to <to> - Quick swap (e.g. /swap 100 USDC to ETH)",
