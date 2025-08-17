@@ -61,10 +61,64 @@ export class GroupService {
   }
 
   async getUserGroups(userAddress: string) {
-    return await this.db.getGroupsByCreator(userAddress);
+    const createdGroups = await this.db.getGroupsByCreator(userAddress);
+    const joinedGroups = await this.db.getUserJoinedGroups(userAddress);
+
+    const allGroups = [...createdGroups, ...joinedGroups];
+    const uniqueGroups = allGroups.filter(
+      (group, index, self) =>
+        index === self.findIndex((g) => g.id === group.id),
+    );
+
+    return uniqueGroups;
   }
 
   async getAllGroups() {
     return await this.db.getAllActiveGroups();
+  }
+
+  async joinGroup(groupId: string, userWallet: string) {
+    try {
+      await this.xmtpClient.conversations.sync();
+
+      const inboxId = await this.xmtpClient.getInboxIdByIdentifier({
+        identifier: userWallet,
+        identifierKind: IdentifierKind.Ethereum,
+      });
+
+      if (!inboxId) {
+        throw new Error(`Invalid or unregistered address: ${userWallet}`);
+      }
+
+      const conversation =
+        await this.xmtpClient.conversations.getConversationById(groupId);
+      if (!conversation) {
+        throw new Error(`Group not found: ${groupId}`);
+      }
+
+      await conversation.addMembers([inboxId]);
+
+      await this.db.addGroupMember(groupId, userWallet);
+
+      return {
+        success: true,
+        message: `Successfully added ${userWallet} to the group`,
+      };
+    } catch (error) {
+      console.error("Error joining group:", error);
+      throw new Error(
+        `Failed to join group: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
+  }
+
+  async getGroupMember(groupId: string, address: string) {
+    const member = await this.db.getGroupMember(groupId, address);
+    console.log(member);
+    return member;
+  }
+
+  async getGroupMembers(groupId: string) {
+    return await this.db.getGroupMembers(groupId);
   }
 }

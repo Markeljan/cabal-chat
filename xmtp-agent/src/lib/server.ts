@@ -1,5 +1,6 @@
 import { cors } from "@elysiajs/cors";
 import { Elysia, t } from "elysia";
+import { getXmtpClient } from "@/helpers/get-client";
 import { GroupService } from "@/lib/group-service";
 import type { XMTPHandler } from "@/lib/xmtp";
 export function createServer(xmtpHandler: XMTPHandler) {
@@ -47,6 +48,14 @@ export function createServer(xmtpHandler: XMTPHandler) {
         if (!group) {
           throw new Error("Group not found");
         }
+
+        const client = await getXmtpClient();
+        const conversationById = await client.conversations.getConversationById(
+          group.groupId,
+        );
+        const memberList = await conversationById.members();
+
+        group.members = memberList.length || null;
         return { success: true, group };
       },
       {
@@ -64,6 +73,58 @@ export function createServer(xmtpHandler: XMTPHandler) {
       {
         params: t.Object({
           address: t.String(),
+        }),
+      },
+    )
+    .get(
+      "/groups/:groupId/members/:address",
+      async ({ params }) => {
+        const group = await groupService.getGroupDetails(params.groupId);
+        if (!group) {
+          throw new Error("Group not found");
+        }
+        if (group.createdBy === params.address) {
+          return { success: true, member: { isActive: true } };
+        }
+        const member = await groupService.getGroupMember(
+          group.groupId,
+          params.address,
+        );
+        if (!member) {
+          return {
+            success: false,
+            member: null,
+            message: "Member not found in group",
+          };
+        }
+        return { success: true, member };
+      },
+      {
+        params: t.Object({
+          groupId: t.String(),
+          address: t.String({ pattern: "^0x[a-fA-F0-9]{40}$" }),
+        }),
+      },
+    )
+    .post(
+      "/groups/:groupId/join",
+      async ({ params, body }) => {
+        const group = await groupService.getGroupDetails(params.groupId);
+        if (!group) {
+          throw new Error("Group not found");
+        }
+        const result = await groupService.joinGroup(
+          group.groupId,
+          body.userWallet,
+        );
+        return result;
+      },
+      {
+        params: t.Object({
+          groupId: t.String(),
+        }),
+        body: t.Object({
+          userWallet: t.String({ pattern: "^0x[a-fA-F0-9]{40}$" }),
         }),
       },
     );

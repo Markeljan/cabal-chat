@@ -23,4 +23,20 @@ model Group {
   // Metadata fields
   metadata    Json?    // Additional metadata about the group
   isActive    Boolean  @default(true)
+
+  // Relations
+  members     GroupMember[]
+}
+
+model GroupMember {
+  id        String   @id @default(cuid())
+  groupId   String   // References Group.groupId (XMTP group ID)
+  address   String   // Ethereum address of the member
+  joinedAt  DateTime @default(now())
+  isActive  Boolean  @default(true)
+
+  // Relations
+  group     Group    @relation(fields: [groupId], references: [groupId], onDelete: Cascade)
+
+  @@unique([groupId, address])
 }

@@ -1,4 +1,4 @@
-import { type Group, PrismaClient } from "@prisma/client";
+import { type Group, type GroupMember, PrismaClient } from "@prisma/client";
 
 export const prisma = new PrismaClient();
 
@@ -68,5 +68,51 @@ export class DatabaseService {
       where: { isActive: true },
       orderBy: { createdAt: "desc" },
     });
+  }
+
+  async addGroupMember(groupId: string, address: string): Promise<GroupMember> {
+    return await prisma.groupMember.create({
+      data: {
+        groupId,
+        address,
+      },
+    });
+  }
+
+  async removeGroupMember(groupId: string, address: string): Promise<void> {
+    await prisma.groupMember.updateMany({
+      where: { groupId, address },
+      data: { isActive: false },
+    });
+  }
+
+  async getGroupMember(
+    groupId: string,
+    address: string,
+  ): Promise<GroupMember | null> {
+    return await prisma.groupMember.findUnique({
+      where: {
+        groupId_address: { groupId, address },
+        isActive: true,
+      },
+    });
+  }
+
+  async getGroupMembers(groupId: string): Promise<GroupMember[]> {
+    return await prisma.groupMember.findMany({
+      where: { groupId, isActive: true },
+      orderBy: { joinedAt: "desc" },
+    });
+  }
+
+  async getUserJoinedGroups(address: string): Promise<GroupWithMetadata[]> {
+    const memberRecords = await prisma.groupMember.findMany({
+      where: { address, isActive: true },
+      include: { group: true },
+    });
+
+    return memberRecords
+      .map((record) => record.group)
+      .filter((group) => group.isActive);
   }
 }
