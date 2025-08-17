@@ -14,8 +14,15 @@ import {
   TransactionToastIcon,
   TransactionToastLabel,
 } from "@coinbase/onchainkit/transaction";
-import { type ReactNode, useCallback, useMemo, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useAccount } from "wagmi";
+import { type Group, groupApi } from "../../lib/group-api";
 
 type ButtonProps = {
   children: ReactNode;
@@ -26,6 +33,14 @@ type ButtonProps = {
   disabled?: boolean;
   type?: "button" | "submit" | "reset";
   icon?: ReactNode;
+};
+
+export {
+  GroupCreation,
+  GroupLeaderboard,
+  BottomNavigation,
+  ProfileTab,
+  CabalDetails,
 };
 
 export function Button({
@@ -176,7 +191,20 @@ export function Home({ setActiveTab }: HomeProps) {
 }
 
 type IconProps = {
-  name: "heart" | "star" | "check" | "plus" | "arrow-right";
+  name:
+    | "heart"
+    | "star"
+    | "check"
+    | "plus"
+    | "arrow-right"
+    | "users"
+    | "trophy"
+    | "trending-up"
+    | "user"
+    | "list"
+    | "arrow-left"
+    | "dollar-sign"
+    | "bar-chart";
   size?: "sm" | "md" | "lg";
   className?: string;
 };
@@ -264,6 +292,144 @@ export function Icon({ name, size = "md", className = "" }: IconProps) {
         <title>Arrow Right</title>
         <line x1="5" y1="12" x2="19" y2="12" />
         <polyline points="12 5 19 12 12 19" />
+      </svg>
+    ),
+    users: (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <title>Users</title>
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    ),
+    trophy: (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <title>Trophy</title>
+        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+        <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+        <path d="M4 22h16" />
+        <path d="M10 14.66V17c0 .55.47.98.97 1.21C11.25 18.48 11.61 18.5 12 18.5s.75-.02 1.03-.29c.5-.23.97-.66.97-1.21v-2.34" />
+        <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+      </svg>
+    ),
+    "trending-up": (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <title>Trending Up</title>
+        <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+        <polyline points="16 7 22 7 22 13" />
+      </svg>
+    ),
+    user: (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <title>User</title>
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+      </svg>
+    ),
+    list: (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <title>List</title>
+        <line x1="8" y1="6" x2="21" y2="6" />
+        <line x1="8" y1="12" x2="21" y2="12" />
+        <line x1="8" y1="18" x2="21" y2="18" />
+        <line x1="3" y1="6" x2="3.01" y2="6" />
+        <line x1="3" y1="12" x2="3.01" y2="12" />
+        <line x1="3" y1="18" x2="3.01" y2="18" />
+      </svg>
+    ),
+    "arrow-left": (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <title>Arrow Left</title>
+        <line x1="19" y1="12" x2="5" y2="12" />
+        <polyline points="12 19 5 12 12 5" />
+      </svg>
+    ),
+    "dollar-sign": (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <title>Dollar Sign</title>
+        <line x1="12" y1="1" x2="12" y2="23" />
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+      </svg>
+    ),
+    "bar-chart": (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <title>Bar Chart</title>
+        <line x1="12" y1="20" x2="12" y2="10" />
+        <line x1="18" y1="20" x2="18" y2="4" />
+        <line x1="6" y1="20" x2="6" y2="16" />
       </svg>
     ),
   };
@@ -379,6 +545,696 @@ function TodoList() {
         </ul>
       </div>
     </Card>
+  );
+}
+
+function GroupCreation({ onGroupCreated }: { onGroupCreated?: () => void }) {
+  const [groupName, setGroupName] = useState("");
+  const [groupDescription, setGroupDescription] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { address } = useAccount();
+
+  const createGroup = async () => {
+    if (!groupName.trim() || !address) return;
+
+    setIsCreating(true);
+    setError(null);
+
+    try {
+      const result = await groupApi.createGroup({
+        name: groupName.trim(),
+        description: groupDescription.trim() || undefined,
+        createdBy: address,
+      });
+
+      if (result.success) {
+        setGroupName("");
+        setGroupDescription("");
+        onGroupCreated?.();
+      } else {
+        setError(result.error || "Failed to create group");
+      }
+    } catch (_err) {
+      setError("Network error occurred");
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
+    if (e.key === "Enter" && e.metaKey) {
+      action();
+    }
+  };
+
+  if (!address) {
+    return (
+      <div className="space-y-6 animate-fade-in pb-20">
+        <Card title="Create New Cabal">
+          <div className="text-center py-4">
+            <p className="text-[var(--app-foreground-muted)] mb-2">
+              Connect your wallet to create a cabal
+            </p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 animate-fade-in pb-20">
+      <Card title="Create New Cabal">
+        <div className="space-y-4">
+          {error && (
+            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+              <p className="text-red-500 text-sm">{error}</p>
+            </div>
+          )}
+
+          <div>
+            <label
+              htmlFor="group-name"
+              className="block text-sm font-medium text-[var(--app-foreground)] mb-2"
+            >
+              Cabal Name
+            </label>
+            <input
+              id="group-name"
+              type="text"
+              value={groupName}
+              onChange={(e) => setGroupName(e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, createGroup)}
+              placeholder="Enter cabal name..."
+              maxLength={100}
+              className="w-full px-3 py-2 bg-[var(--app-card-bg)] border border-[var(--app-card-border)] rounded-lg text-[var(--app-foreground)] placeholder-[var(--app-foreground-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--app-accent)]"
+              disabled={isCreating}
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="group-description"
+              className="block text-sm font-medium text-[var(--app-foreground)] mb-2"
+            >
+              Description (Optional)
+            </label>
+            <textarea
+              id="group-description"
+              value={groupDescription}
+              onChange={(e) => setGroupDescription(e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, createGroup)}
+              placeholder="Describe your trading strategy..."
+              rows={3}
+              maxLength={500}
+              className="w-full px-3 py-2 bg-[var(--app-card-bg)] border border-[var(--app-card-border)] rounded-lg text-[var(--app-foreground)] placeholder-[var(--app-foreground-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--app-accent)] resize-none"
+              disabled={isCreating}
+            />
+          </div>
+
+          <Button
+            onClick={createGroup}
+            disabled={!groupName.trim() || isCreating}
+            icon={<Icon name="users" size="sm" />}
+          >
+            {isCreating ? "Creating..." : "Create Cabal"}
+          </Button>
+
+          <p className="text-xs text-[var(--app-foreground-muted)]">
+            Tip: Press ⌘ + Enter to create quickly
+          </p>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function BottomNavigation({
+  activeTab,
+  onTabChange,
+}: {
+  activeTab: string;
+  onTabChange: (tab: string) => void;
+}) {
+  return (
+    <div className="fixed bottom-0 left-0 right-0 bg-[var(--app-card-bg)] border-t border-[var(--app-card-border)] px-4 py-2">
+      <div className="max-w-md mx-auto flex items-center justify-around">
+        <button
+          type="button"
+          onClick={() => onTabChange("leaderboard")}
+          className={`flex flex-col items-center py-2 px-3 transition-colors ${
+            activeTab === "leaderboard"
+              ? "text-[var(--app-accent)]"
+              : "text-[var(--app-foreground-muted)]"
+          }`}
+        >
+          <Icon name="list" size="md" />
+          <span className="text-xs mt-1">Leaderboard</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onTabChange("create")}
+          className="flex flex-col items-center py-2 px-3 bg-[var(--app-accent)] rounded-full text-[var(--app-background)] shadow-lg"
+        >
+          <Icon name="plus" size="md" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onTabChange("profile")}
+          className={`flex flex-col items-center py-2 px-3 transition-colors ${
+            activeTab === "profile"
+              ? "text-[var(--app-accent)]"
+              : "text-[var(--app-foreground-muted)]"
+          }`}
+        >
+          <Icon name="user" size="md" />
+          <span className="text-xs mt-1">Profile</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ProfileTab() {
+  const [joinedGroups, setJoinedGroups] = useState<Group[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { address } = useAccount();
+
+  const fetchUserGroups = useCallback(async () => {
+    if (!address) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const result = await groupApi.getUserGroups(address);
+
+      if (result.success && result.groups) {
+        setJoinedGroups(result.groups);
+      } else {
+        setError(result.error || "Failed to fetch your groups");
+      }
+    } catch (_err) {
+      setError("Network error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [address]);
+
+  useEffect(() => {
+    fetchUserGroups();
+  }, [fetchUserGroups]);
+
+  if (!address) {
+    return (
+      <div className="space-y-6 animate-fade-in pb-20">
+        <Card title="My Cabals">
+          <div className="text-center py-4">
+            <p className="text-[var(--app-foreground-muted)]">
+              Connect your wallet to view your cabals
+            </p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 animate-fade-in pb-20">
+        <Card title="My Cabals">
+          <div className="text-center py-8">
+            <div className="animate-pulse text-[var(--app-foreground-muted)]">
+              Loading your cabals...
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6 animate-fade-in pb-20">
+        <Card title="My Cabals">
+          <div className="space-y-4">
+            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+              <p className="text-red-500 text-sm">{error}</p>
+            </div>
+            <Button onClick={fetchUserGroups} variant="outline" size="sm">
+              Retry
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 animate-fade-in pb-20">
+      <Card title="My Cabals">
+        {joinedGroups.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-[var(--app-foreground-muted)]">
+              You haven't joined any cabals yet. Check out the leaderboard to
+              find one!
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {joinedGroups.map((group) => (
+              <div
+                key={group.id}
+                className="p-4 rounded-lg border bg-[var(--app-accent)]/10 border-[var(--app-accent)]/30 cursor-pointer hover:bg-[var(--app-accent)]/15 transition-colors"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <h4 className="font-medium text-[var(--app-foreground)]">
+                      {group.name}
+                    </h4>
+                    {group.description && (
+                      <p className="text-xs text-[var(--app-foreground-muted)] mt-1">
+                        {group.description}
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-green-500">
+                      <Icon
+                        name="trending-up"
+                        size="sm"
+                        className="inline mr-1"
+                      />
+                      +{(group.performance || 0).toFixed(1)}%
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4 text-xs text-[var(--app-foreground-muted)]">
+                    <span className="flex items-center">
+                      <Icon name="users" size="sm" className="mr-1" />
+                      {group.memberCount || 0} members
+                    </span>
+                  </div>
+                  <span className="px-2 py-1 bg-[var(--app-accent)] text-[var(--app-background)] text-xs rounded-full">
+                    Joined
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+function CabalDetails({
+  cabalId,
+  onBack,
+}: {
+  cabalId: string;
+  onBack: () => void;
+}) {
+  const [cabal, setCabal] = useState<Group | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchCabalDetails = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const result = await groupApi.getGroupDetails(cabalId);
+
+        if (result.success && result.group) {
+          setCabal(result.group);
+        } else {
+          setError(result.error || "Failed to fetch cabal details");
+        }
+      } catch (_err) {
+        setError("Network error occurred");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCabalDetails();
+  }, [cabalId]);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 animate-fade-in pb-20">
+        <div className="flex items-center mb-4">
+          <button
+            type="button"
+            onClick={onBack}
+            className="mr-3 p-2 hover:bg-[var(--app-card-bg)] rounded-lg transition-colors"
+          >
+            <Icon name="arrow-left" size="md" />
+          </button>
+          <h1 className="text-lg font-semibold">Loading...</h1>
+        </div>
+        <Card>
+          <div className="text-center py-8">
+            <div className="animate-pulse text-[var(--app-foreground-muted)]">
+              Loading cabal details...
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error || !cabal) {
+    return (
+      <div className="space-y-6 animate-fade-in pb-20">
+        <div className="flex items-center mb-4">
+          <button
+            type="button"
+            onClick={onBack}
+            className="mr-3 p-2 hover:bg-[var(--app-card-bg)] rounded-lg transition-colors"
+          >
+            <Icon name="arrow-left" size="md" />
+          </button>
+          <h1 className="text-lg font-semibold">Error</h1>
+        </div>
+        <Card>
+          <div className="space-y-4">
+            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+              <p className="text-red-500 text-sm">
+                {error || "Cabal not found"}
+              </p>
+            </div>
+            <Button onClick={onBack} variant="outline">
+              Go Back
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  const mockStats = {
+    pnl: 23.5,
+    tvl: 1250000,
+    volume24h: 89000,
+    trades: 127,
+    winRate: 68.5,
+  };
+
+  return (
+    <div className="space-y-6 animate-fade-in pb-20">
+      <div className="flex items-center mb-4">
+        <button
+          type="button"
+          onClick={onBack}
+          className="mr-3 p-2 hover:bg-[var(--app-card-bg)] rounded-lg transition-colors"
+        >
+          <Icon name="arrow-left" size="md" />
+        </button>
+        <h1 className="text-lg font-semibold">{cabal.name}</h1>
+      </div>
+
+      <Card>
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-lg font-medium text-[var(--app-foreground)] mb-2">
+              {cabal.name}
+            </h2>
+            {cabal.description && (
+              <p className="text-[var(--app-foreground-muted)]">
+                {cabal.description}
+              </p>
+            )}
+          </div>
+
+          <div className="flex items-center space-x-4 text-sm text-[var(--app-foreground-muted)]">
+            <span className="flex items-center">
+              <Icon name="users" size="sm" className="mr-1" />
+              {cabal.memberCount || 0} members
+            </span>
+            <span>
+              Created {new Date(cabal.createdAt).toLocaleDateString()}
+            </span>
+          </div>
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-2 gap-4">
+        <Card>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-green-500">
+              +{mockStats.pnl}%
+            </div>
+            <div className="text-sm text-[var(--app-foreground-muted)]">
+              PnL
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-[var(--app-foreground)]">
+              ${(mockStats.tvl / 1000000).toFixed(1)}M
+            </div>
+            <div className="text-sm text-[var(--app-foreground-muted)]">
+              TVL
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      <Card title="Performance Stats">
+        <div className="space-y-4">
+          <div className="flex justify-between">
+            <span className="text-[var(--app-foreground-muted)]">
+              24h Volume
+            </span>
+            <span className="font-medium">
+              ${mockStats.volume24h.toLocaleString()}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-[var(--app-foreground-muted)]">
+              Total Trades
+            </span>
+            <span className="font-medium">{mockStats.trades}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-[var(--app-foreground-muted)]">Win Rate</span>
+            <span className="font-medium text-green-500">
+              {mockStats.winRate}%
+            </span>
+          </div>
+        </div>
+      </Card>
+
+      <Card title="Trading Activity">
+        <div className="text-center py-8">
+          <Icon
+            name="bar-chart"
+            size="lg"
+            className="text-[var(--app-foreground-muted)] mx-auto mb-2"
+          />
+          <p className="text-[var(--app-foreground-muted)]">
+            Trading charts coming soon
+          </p>
+        </div>
+      </Card>
+
+      <div className="pt-4">
+        <Button className="w-full" icon={<Icon name="users" size="sm" />}>
+          Join Cabal
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function GroupLeaderboard({
+  refreshTrigger,
+  onCabalClick,
+}: {
+  refreshTrigger?: number;
+  onCabalClick?: (cabalId: string) => void;
+}) {
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchGroups = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const result = await groupApi.getAllGroups();
+
+      if (result.success && result.groups) {
+        setGroups(result.groups);
+      } else {
+        setError(result.error || "Failed to fetch groups");
+      }
+    } catch (_err) {
+      setError("Network error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refresh
+  useEffect(() => {
+    fetchGroups();
+  }, [fetchGroups, refreshTrigger]);
+
+  const toggleJoinGroup = (groupId: string) => {
+    console.log("Toggle join group:", groupId);
+  };
+
+  const getRankIcon = (index: number) => {
+    const rank = index + 1;
+    if (rank === 1)
+      return <Icon name="trophy" size="sm" className="text-yellow-500" />;
+    if (rank <= 3)
+      return (
+        <Icon name="star" size="sm" className="text-[var(--app-accent)]" />
+      );
+    return (
+      <span className="text-[var(--app-foreground-muted)] text-sm">
+        #{rank}
+      </span>
+    );
+  };
+
+  const getPerformanceColor = (performance?: number) => {
+    if (!performance) return "text-[var(--app-foreground-muted)]";
+    if (performance > 20) return "text-green-500";
+    if (performance > 10) return "text-green-400";
+    if (performance > 0) return "text-yellow-500";
+    return "text-red-500";
+  };
+
+  const formatPerformance = (performance?: number) => {
+    if (performance === undefined) return "N/A";
+    return `+${performance.toFixed(1)}%`;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 animate-fade-in pb-20">
+        <Card title="Cabal Leaderboard">
+          <div className="text-center py-8">
+            <div className="animate-pulse text-[var(--app-foreground-muted)]">
+              Loading cabals...
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6 animate-fade-in pb-20">
+        <Card title="Cabal Leaderboard">
+          <div className="space-y-4">
+            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+              <p className="text-red-500 text-sm">{error}</p>
+            </div>
+            <Button onClick={fetchGroups} variant="outline" size="sm">
+              Retry
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (groups.length === 0) {
+    return (
+      <div className="space-y-6 animate-fade-in pb-20">
+        <Card title="Cabal Leaderboard">
+          <div className="text-center py-8">
+            <p className="text-[var(--app-foreground-muted)]">
+              No cabals found. Be the first to create one!
+            </p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 animate-fade-in pb-20">
+      <Card title="Cabal Leaderboard">
+        <div className="space-y-3">
+          {groups.map((group, index) => (
+            <div
+              key={group.id}
+              className="p-4 rounded-lg border transition-all bg-[var(--app-card-bg)] border-[var(--app-card-border)] hover:border-[var(--app-accent)]/50 cursor-pointer"
+              onClick={() => onCabalClick?.(group.id)}
+              onKeyDown={() => onCabalClick?.(group.id)}
+            >
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex items-center space-x-2">
+                  {getRankIcon(index)}
+                  <div>
+                    <h4 className="font-medium text-[var(--app-foreground)]">
+                      {group.name}
+                    </h4>
+                    {group.description && (
+                      <p className="text-xs text-[var(--app-foreground-muted)] mt-1">
+                        {group.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div
+                    className={`text-sm font-medium ${getPerformanceColor(group.performance)}`}
+                  >
+                    <Icon
+                      name="trending-up"
+                      size="sm"
+                      className="inline mr-1"
+                    />
+                    {formatPerformance(group.performance)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4 text-xs text-[var(--app-foreground-muted)]">
+                  <span className="flex items-center">
+                    <Icon name="users" size="sm" className="mr-1" />
+                    {group.memberCount || 0} members
+                  </span>
+                  <span className="text-xs">
+                    Created {new Date(group.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleJoinGroup(group.id);
+                  }}
+                >
+                  Join
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
   );
 }
 

@@ -8,26 +8,27 @@ import {
   Name,
 } from "@coinbase/onchainkit/identity";
 import {
-  useAddFrame,
-  useMiniKit,
-  useOpenUrl,
-} from "@coinbase/onchainkit/minikit";
-import {
   ConnectWallet,
   Wallet,
   WalletDropdown,
   WalletDropdownDisconnect,
 } from "@coinbase/onchainkit/wallet";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useAccount } from "wagmi";
 import { useXMTP } from "../lib/hooks/useXMTP";
-import { Button, Features, Home, Icon } from "./components/DemoComponents";
+import {
+  BottomNavigation,
+  CabalDetails,
+  GroupCreation,
+  GroupLeaderboard,
+  ProfileTab,
+} from "./components/DemoComponents";
 import { XMTPInfoCard } from "./components/XMTPInfoCard";
 
 export default function App() {
-  const { setFrameReady, isFrameReady, context } = useMiniKit();
-  const [frameAdded, setFrameAdded] = useState(false);
-  const [activeTab, setActiveTab] = useState("home");
+  const [activeTab, setActiveTab] = useState("leaderboard");
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [selectedCabalId, setSelectedCabalId] = useState<string | null>(null);
 
   const { isConnected } = useAccount();
   const {
@@ -38,47 +39,6 @@ export default function App() {
     isRegistered,
     initializeClient,
   } = useXMTP();
-
-  const addFrame = useAddFrame();
-  const openUrl = useOpenUrl();
-
-  useEffect(() => {
-    if (!isFrameReady) {
-      setFrameReady();
-    }
-  }, [setFrameReady, isFrameReady]);
-
-  const handleAddFrame = useCallback(async () => {
-    const frameAdded = await addFrame();
-    setFrameAdded(Boolean(frameAdded));
-  }, [addFrame]);
-
-  const saveFrameButton = useMemo(() => {
-    if (context && !context.client.added) {
-      return (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleAddFrame}
-          className="text-[var(--app-accent)] p-4"
-          icon={<Icon name="plus" size="sm" />}
-        >
-          Save Frame
-        </Button>
-      );
-    }
-
-    if (frameAdded) {
-      return (
-        <div className="flex items-center space-x-1 text-sm font-medium text-[#0052FF] animate-fade-out">
-          <Icon name="check" size="sm" className="text-[#0052FF]" />
-          <span>Saved</span>
-        </div>
-      );
-    }
-
-    return null;
-  }, [context, frameAdded, handleAddFrame]);
 
   const xmtpStatusDisplay = useMemo(() => {
     if (!isConnected) return null;
@@ -100,7 +60,7 @@ export default function App() {
     if (client && isRegistered) {
       return (
         <div className="text-xs text-green-500 flex items-center space-x-1">
-          <Icon name="check" size="sm" />
+          {/*<Icon name="check" size="sm" />*/}
           <span>XMTP Ready</span>
         </div>
       );
@@ -136,24 +96,40 @@ export default function App() {
             </div>
             {xmtpStatusDisplay}
           </div>
-          <div>{saveFrameButton}</div>
         </header>
 
         <main className="flex-1">
-          {activeTab === "home" && <Home setActiveTab={setActiveTab} />}
-          {activeTab === "features" && <Features setActiveTab={setActiveTab} />}
+          {selectedCabalId ? (
+            <CabalDetails
+              cabalId={selectedCabalId}
+              onBack={() => setSelectedCabalId(null)}
+            />
+          ) : (
+            <>
+              {activeTab === "leaderboard" && (
+                <GroupLeaderboard
+                  refreshTrigger={refreshTrigger}
+                  onCabalClick={setSelectedCabalId}
+                />
+              )}
+              {activeTab === "create" && (
+                <GroupCreation
+                  onGroupCreated={() => {
+                    setRefreshTrigger((prev) => prev + 1);
+                    setActiveTab("leaderboard");
+                  }}
+                />
+              )}
+              {activeTab === "profile" && (
+                <ProfileTab refreshTrigger={refreshTrigger} />
+              )}
+            </>
+          )}
         </main>
 
-        <footer className="mt-2 pt-4 flex justify-center">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-[var(--ock-text-foreground-muted)] text-xs"
-            onClick={() => openUrl("https://base.org/builders/minikit")}
-          >
-            Built on Base with MiniKit
-          </Button>
-        </footer>
+        {!selectedCabalId && (
+          <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+        )}
 
         <XMTPInfoCard isOpen={showInfoCard} onContinue={initializeClient} />
       </div>
