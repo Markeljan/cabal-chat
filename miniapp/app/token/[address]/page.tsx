@@ -75,11 +75,11 @@ export async function generateMetadata({
     button: {
       title: `Buy ${tokenData?.symbol || "Buy Token"}`,
       action: {
-        type: "launch_miniapp",
+        type: "launch_frame",
         name: tokenData?.name || "Token",
         url: `${baseUrl}/token/${address}`,
-        splashImageUrl: tokenData?.image || `${baseUrl}/logo.png`,
-        splashBackgroundColor: "#f5f0ec",
+        // splashImageUrl: tokenData?.image || `${baseUrl}/logo.png`,
+        splashBackgroundColor: "#000000",
       },
     },
   };
