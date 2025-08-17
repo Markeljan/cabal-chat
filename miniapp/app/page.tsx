@@ -24,6 +24,7 @@ import {
   GroupLeaderboard,
   ProfileTab,
 } from "./components/DemoComponents";
+import { LeaderboardTabs } from "./components/LeaderboardTabs";
 import { XMTPInfoCard } from "./components/XMTPInfoCard";
 
 export default function App() {
@@ -119,6 +120,7 @@ export default function App() {
                   onCabalClick={setSelectedCabalId}
                 />
               )}
+              {activeTab === "trading" && <LeaderboardTabs />}
               {activeTab === "create" && (
                 <GroupCreation
                   onGroupCreated={() => {

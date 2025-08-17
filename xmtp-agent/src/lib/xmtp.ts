@@ -2,6 +2,7 @@ import { ContentTypeWalletSendCalls } from "@xmtp/content-type-wallet-send-calls
 import type { Conversation, DecodedMessage } from "@xmtp/node-sdk";
 import type { XMTPClient, XMTPClientContentTypes } from "@/helpers/get-client";
 import { promptAgent } from "@/lib/ai";
+import { swapHandler } from "@/lib/swap-handler";
 import { USDCHandler } from "@/lib/usdc";
 
 export class XMTPHandler {
@@ -100,6 +101,19 @@ export class XMTPHandler {
       } else {
         // If not a command or address, prompt the agent
         console.log("Prompting agent with message:", messageContent);
+
+        // Get group ID if this is a group conversation
+        const groupId =
+          "topic" in conversation ? conversation.topic : undefined;
+
+        // Store context for the AI agent
+        const _context = {
+          message: messageContent,
+          senderAddress: memberAddress,
+          groupId,
+          conversationId: message.conversationId,
+        };
+
         const result = await promptAgent(messageContent);
 
         await conversation.send(result.text);
@@ -119,6 +133,12 @@ export class XMTPHandler {
       await this.handleBalanceCommand(conversation, memberAddress);
     } else if (command.startsWith("/tx ")) {
       await this.handleTransactionCommand(command, conversation, memberAddress);
+    } else if (command === "/stats") {
+      await this.handleStatsCommand(conversation, memberAddress);
+    } else if (command === "/leaderboard") {
+      await this.handleLeaderboardCommand(conversation);
+    } else if (command === "/update-pnl") {
+      await this.handleUpdatePnlCommand(conversation);
     } else {
       // Any invalid command (including /help) shows the help message
       await this.showHelp(conversation);
@@ -159,11 +179,109 @@ export class XMTPHandler {
     await conversation.send(walletSendCalls, ContentTypeWalletSendCalls);
   }
 
+  private async handleStatsCommand(
+    conversation: Conversation,
+    memberAddress: string,
+  ) {
+    try {
+      const { leaderboardService } = await import("@/lib/leaderboard");
+      const stats = await leaderboardService.getUserStats(memberAddress);
+
+      if (!stats) {
+        await conversation.send("No trading stats found for your address.");
+        return;
+      }
+
+      const { user, rank } = stats;
+      const formatUSD = (val: string) => {
+        const num = parseFloat(val);
+        return num >= 1000
+          ? `$${(num / 1000).toFixed(2)}K`
+          : `$${num.toFixed(2)}`;
+      };
+
+      const message =
+        `📊 Your Trading Stats:\n` +
+        `🏆 Rank: #${rank}\n` +
+        `💰 Total Volume: ${formatUSD(user.totalVolume)}\n` +
+        `📈 Total PNL: ${formatUSD(user.totalPnlUsd)} (${parseFloat(user.totalPnlPercent).toFixed(2)}%)\n` +
+        `🔄 Total Swaps: ${user.totalSwaps}\n` +
+        `\nView full stats at: https://cabalchat.xyz/user/${memberAddress}`;
+
+      await conversation.send(message);
+    } catch (error) {
+      console.error("Error fetching user stats:", error);
+      await conversation.send(
+        "Error fetching your stats. Please try again later.",
+      );
+    }
+  }
+
+  private async handleLeaderboardCommand(conversation: Conversation) {
+    try {
+      const { leaderboardService } = await import("@/lib/leaderboard");
+      const leaderboard = await leaderboardService.getUserLeaderboard(
+        "volume",
+        5,
+      );
+
+      const formatUSD = (val: string) => {
+        const num = parseFloat(val);
+        return num >= 1000
+          ? `$${(num / 1000).toFixed(2)}K`
+          : `$${num.toFixed(2)}`;
+      };
+
+      let message = "🏆 Top 5 Traders by Volume:\n\n";
+
+      leaderboard.forEach((user, index) => {
+        const emoji =
+          index === 0
+            ? "🥇"
+            : index === 1
+              ? "🥈"
+              : index === 2
+                ? "🥉"
+                : `${index + 1}.`;
+        const name =
+          user.username ||
+          `${user.address.slice(0, 6)}...${user.address.slice(-4)}`;
+        message += `${emoji} ${name}\n`;
+        message += `   Volume: ${formatUSD(user.totalVolume)} | PNL: ${formatUSD(user.totalPnlUsd)}\n`;
+      });
+
+      message +=
+        "\nView full leaderboard at: https://cabalchat.xyz/leaderboard";
+
+      await conversation.send(message);
+    } catch (error) {
+      console.error("Error fetching leaderboard:", error);
+      await conversation.send(
+        "Error fetching leaderboard. Please try again later.",
+      );
+    }
+  }
+
+  private async handleUpdatePnlCommand(conversation: Conversation) {
+    try {
+      await swapHandler.updateAllPnl();
+      await conversation.send("✅ PNL values updated for all swaps.");
+    } catch (error) {
+      console.error("Error updating PNL:", error);
+      await conversation.send(
+        "Error updating PNL values. Please try again later.",
+      );
+    }
+  }
+
   private async showHelp(conversation: Conversation) {
     await conversation.send(
       "Available commands:\n" +
         "/balance - Check your USDC balance\n" +
         "/tx <amount> - Send USDC to the agent (e.g. /tx 0.1)\n" +
+        "/stats - View your trading statistics\n" +
+        "/leaderboard - Show top traders\n" +
+        "/update-pnl - Update PNL for all swaps\n" +
         "/help - Show this help message",
     );
   }

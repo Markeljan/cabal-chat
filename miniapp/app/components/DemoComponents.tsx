@@ -230,7 +230,20 @@ function BottomNavigation({
           }`}
         >
           <List className="w-5 h-5" />
-          <span className="text-xs mt-1">Leaderboard</span>
+          <span className="text-xs mt-1">Groups</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onTabChange("trading")}
+          className={`flex flex-col items-center py-2 px-3 transition-colors ${
+            activeTab === "trading"
+              ? "text-[var(--app-accent)]"
+              : "text-[var(--app-foreground-muted)]"
+          }`}
+        >
+          <TrendingUp className="w-5 h-5" />
+          <span className="text-xs mt-1">Trading</span>
         </button>
 
         <button

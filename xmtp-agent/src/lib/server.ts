@@ -2,12 +2,14 @@ import { cors } from "@elysiajs/cors";
 import { Elysia, t } from "elysia";
 import { getXmtpClient } from "@/helpers/get-client";
 import { GroupService } from "@/lib/group-service";
+import { createLeaderboardRoutes } from "@/lib/leaderboard-routes";
 import type { XMTPHandler } from "@/lib/xmtp";
 export function createServer(xmtpHandler: XMTPHandler) {
   const groupService = new GroupService(xmtpHandler.getClient());
 
   const app = new Elysia()
     .use(cors())
+    .use(createLeaderboardRoutes())
     .get("/test", () => "XMTP Agent Server")
     .get("/health", () => ({
       status: "ok",
