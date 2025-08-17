@@ -1,0 +1,26 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  imageUrl    String?
+  groupId     String   @unique // XMTP group ID
+  createdBy   String   // Address of the user who created the group
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Metadata fields
+  metadata    Json?    // Additional metadata about the group
+  isActive    Boolean  @default(true)
+}
