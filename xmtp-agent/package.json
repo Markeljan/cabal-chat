@@ -9,6 +9,7 @@
     "start": "bun clean-installations && bun wipe-db && bun src/index.ts",
     "check-installations": "bun src/scripts/check-installations",
     "clean-installations": "bun src/scripts/clean-installations",
+    "gen-keys": "bun src/scripts/gen-keys",
     "wipe-db": "bun src/scripts/wipe-db",
     "check": "biome check",
     "check:fix": "biome check --write --unsafe"

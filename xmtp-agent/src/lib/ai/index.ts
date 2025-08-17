@@ -15,5 +15,8 @@ export const promptAgent = async (prompt: string) => {
     prompt,
   });
 
+  console.log("result", result);
+  await Bun.write("result.json", JSON.stringify(result, null, 2));
+
   return result;
 };
