@@ -1,6 +1,6 @@
 import type { Swap } from "../../../miniapp/lib/db-adapter";
 
-const MINIAPP_BASE_URL = process.env.MINIAPP_URL || "https://app.cabalchat.xyz";
+const MINIAPP_BASE_URL = "https://cabalchat.xyz";
 
 export class SwapHandler {
   /**
