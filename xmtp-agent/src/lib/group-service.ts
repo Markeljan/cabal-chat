@@ -1,4 +1,4 @@
-import { GroupPermissionsOptions, IdentifierKind } from "@xmtp/node-sdk";
+import { Group, GroupPermissionsOptions, IdentifierKind } from "@xmtp/node-sdk";
 import type { XMTPClient } from "@/helpers/get-client";
 import { type CreateGroupData, DatabaseService } from "@/lib/database";
 
@@ -94,6 +94,10 @@ export class GroupService {
         await this.xmtpClient.conversations.getConversationById(groupId);
       if (!conversation) {
         throw new Error(`Group not found: ${groupId}`);
+      }
+
+      if (!(conversation instanceof Group)) {
+        throw new Error(`Conversation is not a group: ${groupId}`);
       }
 
       await conversation.addMembers([inboxId]);
