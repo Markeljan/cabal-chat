@@ -1,25 +1,17 @@
-"use client";
+// @noErrors: 2307 2580 2339 - cannot find 'process', cannot find './wagmi', cannot find 'import.meta'
+'use client';
 
-import { MiniKitProvider } from "@coinbase/onchainkit/minikit";
-import type { ReactNode } from "react";
-import { base } from "wagmi/chains";
+import type { ReactNode } from 'react';
+import { OnchainKitProvider } from '@coinbase/onchainkit';
+import { base } from 'wagmi/chains'; // add baseSepolia for testing
 
 export function Providers(props: { children: ReactNode }) {
   return (
-    <MiniKitProvider
+    <OnchainKitProvider
       apiKey={process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY}
-      projectId={process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_ID}
-      chain={base}
-      config={{
-        appearance: {
-          mode: "auto",
-          theme: "mini-app-theme",
-          name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME,
-          logo: process.env.NEXT_PUBLIC_ICON_URL,
-        },
-      }}
+      chain={base} // add baseSepolia for testing
     >
       {props.children}
-    </MiniKitProvider>
+    </OnchainKitProvider>
   );
 }
