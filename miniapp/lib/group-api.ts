@@ -24,9 +24,15 @@ export interface Group {
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
-  groups?: T[];
-  group?: T;
   error?: string;
+}
+
+export interface GroupsResponse extends ApiResponse<Group[]> {
+  groups: Group[];
+}
+
+export interface GroupResponse extends ApiResponse<Group> {
+  group: Group;
 }
 
 class GroupApiService {
@@ -61,25 +67,25 @@ class GroupApiService {
     }
   }
 
-  async createGroup(
-    groupData: CreateGroupRequest,
-  ): Promise<ApiResponse<Group>> {
+  async createGroup(groupData: CreateGroupRequest): Promise<GroupResponse> {
     return this.request<Group>("/groups/create", {
       method: "POST",
       body: JSON.stringify(groupData),
-    });
+    }) as Promise<GroupResponse>;
   }
 
-  async getAllGroups(): Promise<ApiResponse<Group[]>> {
-    return this.request<Group[]>("/groups");
+  async getAllGroups(): Promise<GroupsResponse> {
+    return this.request<Group[]>("/groups") as Promise<GroupsResponse>;
   }
 
-  async getGroupDetails(groupId: string): Promise<ApiResponse<Group>> {
-    return this.request<Group>(`/groups/${groupId}`);
+  async getGroupDetails(groupId: string): Promise<GroupResponse> {
+    return this.request<Group>(`/groups/${groupId}`) as Promise<GroupResponse>;
   }
 
-  async getUserGroups(address: string): Promise<ApiResponse<Group[]>> {
-    return this.request<Group[]>(`/users/${address}/groups`);
+  async getUserGroups(address: string): Promise<GroupsResponse> {
+    return this.request<Group[]>(
+      `/users/${address}/groups`,
+    ) as Promise<GroupsResponse>;
   }
 }
 

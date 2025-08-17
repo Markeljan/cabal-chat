@@ -22,25 +22,30 @@ import {
   useState,
 } from "react";
 import { useAccount } from "wagmi";
-import { type Group, groupApi } from "../../lib/group-api";
+import {
+  type Group,
+  GroupResponse,
+  GroupsResponse,
+  groupApi,
+} from "../../lib/group-api";
 
 type ButtonProps = {
   children: ReactNode;
   variant?: "primary" | "secondary" | "outline" | "ghost";
   size?: "sm" | "md" | "lg";
   className?: string;
-  onClick?: () => void;
+  onClick?: (e?: React.MouseEvent<HTMLButtonElement>) => void;
   disabled?: boolean;
   type?: "button" | "submit" | "reset";
   icon?: ReactNode;
 };
 
 export {
+  BottomNavigation,
+  CabalDetails,
   GroupCreation,
   GroupLeaderboard,
-  BottomNavigation,
   ProfileTab,
-  CabalDetails,
 };
 
 export function Button({
@@ -101,13 +106,29 @@ function Card({ title, children, className = "", onClick }: CardProps) {
     }
   };
 
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        className={`w-full text-left bg-[var(--app-card-bg)] backdrop-blur-md rounded-xl shadow-lg border border-[var(--app-card-border)] overflow-hidden transition-all hover:shadow-xl ${className}`}
+        onClick={onClick}
+        onKeyDown={handleKeyDown}
+      >
+        {title && (
+          <div className="px-5 py-3 border-b border-[var(--app-card-border)]">
+            <h3 className="text-lg font-medium text-[var(--app-foreground)]">
+              {title}
+            </h3>
+          </div>
+        )}
+        <div className="p-5">{children}</div>
+      </button>
+    );
+  }
+
   return (
     <div
-      className={`bg-[var(--app-card-bg)] backdrop-blur-md rounded-xl shadow-lg border border-[var(--app-card-border)] overflow-hidden transition-all hover:shadow-xl ${className} ${onClick ? "cursor-pointer" : ""}`}
-      onClick={onClick}
-      onKeyDown={onClick ? handleKeyDown : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      role={onClick ? "button" : undefined}
+      className={`bg-[var(--app-card-bg)] backdrop-blur-md rounded-xl shadow-lg border border-[var(--app-card-border)] overflow-hidden transition-all ${className}`}
     >
       {title && (
         <div className="px-5 py-3 border-b border-[var(--app-card-border)]">
@@ -729,7 +750,7 @@ function ProfileTab() {
     setError(null);
 
     try {
-      const result = await groupApi.getUserGroups(address);
+      const result: GroupsResponse = await groupApi.getUserGroups(address);
 
       if (result.success && result.groups) {
         setJoinedGroups(result.groups);
@@ -869,7 +890,7 @@ function CabalDetails({
       setError(null);
 
       try {
-        const result = await groupApi.getGroupDetails(cabalId);
+        const result: GroupResponse = await groupApi.getGroupDetails(cabalId);
 
         if (result.success && result.group) {
           setCabal(result.group);
@@ -1072,7 +1093,7 @@ function GroupLeaderboard({
     setError(null);
 
     try {
-      const result = await groupApi.getAllGroups();
+      const result: GroupsResponse = await groupApi.getAllGroups();
 
       if (result.success && result.groups) {
         setGroups(result.groups);
@@ -1173,11 +1194,10 @@ function GroupLeaderboard({
       <Card title="Cabal Leaderboard">
         <div className="space-y-3">
           {groups.map((group, index) => (
-            <div
+            <Card
               key={group.id}
-              className="p-4 rounded-lg border transition-all bg-[var(--app-card-bg)] border-[var(--app-card-border)] hover:border-[var(--app-accent)]/50 cursor-pointer"
+              className="transition-all hover:border-[var(--app-accent)]/50 cursor-pointer"
               onClick={() => onCabalClick?.(group.id)}
-              onKeyDown={() => onCabalClick?.(group.id)}
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center space-x-2">
@@ -1222,14 +1242,14 @@ function GroupLeaderboard({
                   variant="primary"
                   size="sm"
                   onClick={(e) => {
-                    e.stopPropagation();
+                    e?.stopPropagation();
                     toggleJoinGroup(group.id);
                   }}
                 >
                   Join
                 </Button>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       </Card>
