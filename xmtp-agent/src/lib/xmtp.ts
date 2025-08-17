@@ -89,6 +89,7 @@ export class XMTPHandler {
       // If not a command, prompt the agent
       console.log("Prompting agent with message:", messageContent);
       const result = await promptAgent(messageContent);
+      console.log("Agent result:", result);
       await conversation.send(result.text);
     }
   }
