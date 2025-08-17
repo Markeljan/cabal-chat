@@ -67,7 +67,7 @@ export const createSwapQuoteTool = tool({
 
     // convert to wallet send calls
     const walletSendCalls: WalletSendCallsParams = {
-      version: "1.0.0",
+      version: "1.0",
       chainId: toHex(base.id),
       from: "0x", // dynamic sender
       calls: [
