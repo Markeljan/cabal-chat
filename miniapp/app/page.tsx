@@ -7,13 +7,14 @@ import {
   Identity,
   Name,
 } from "@coinbase/onchainkit/identity";
+import { useMiniKit } from "@coinbase/onchainkit/minikit";
 import {
   ConnectWallet,
   Wallet,
   WalletDropdown,
   WalletDropdownDisconnect,
 } from "@coinbase/onchainkit/wallet";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAccount } from "wagmi";
 import { useXMTP } from "../lib/hooks/useXMTP";
 import {
@@ -30,6 +31,7 @@ export default function App() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [selectedCabalId, setSelectedCabalId] = useState<string | null>(null);
 
+  const { setFrameReady, isFrameReady } = useMiniKit();
   const { isConnected } = useAccount();
   const {
     client,
@@ -39,6 +41,12 @@ export default function App() {
     isRegistered,
     initializeClient,
   } = useXMTP();
+
+  useEffect(() => {
+    if (!isFrameReady) {
+      setFrameReady();
+    }
+  }, [setFrameReady, isFrameReady]);
 
   const xmtpStatusDisplay = useMemo(() => {
     if (!isConnected) return null;

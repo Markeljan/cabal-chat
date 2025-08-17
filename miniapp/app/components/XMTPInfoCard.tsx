@@ -1,6 +1,7 @@
 "use client";
 
-import { Button, Icon } from "./DemoComponents";
+import { ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface XMTPInfoCardProps {
   isOpen: boolean;
@@ -16,7 +17,7 @@ export function XMTPInfoCard({ isOpen, onContinue }: XMTPInfoCardProps) {
         <div className="flex justify-between items-start mb-4">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-[var(--app-accent)] rounded-full flex items-center justify-center">
-              <Icon name="arrow-right" size="sm" className="text-white" />
+              <ArrowRight className="text-white" />
             </div>
             <h3 className="text-lg font-semibold text-[var(--app-foreground)]">
               Enable XMTP Messaging
@@ -45,10 +46,9 @@ export function XMTPInfoCard({ isOpen, onContinue }: XMTPInfoCardProps) {
 
         <div className="flex space-x-3">
           <Button
-            variant="primary"
             size="sm"
             onClick={onContinue}
-            className="flex-1 bg-[var(--app-accent)] text-white"
+            className="flex-1 bg-[var(--app-accent)] text-white hover:bg-[var(--app-accent-hover)]"
           >
             Continue
           </Button>
