@@ -27,6 +27,12 @@ export class XMTPHandler {
     }
   }
 
+  private isEthereumAddress(text: string): string | null {
+    const ethAddressRegex = /\b(0x[a-fA-F0-9]{40})\b/;
+    const match = text.match(ethAddressRegex);
+    return match ? match[1] : null;
+  }
+
   private async handleMessage(message: DecodedMessage<XMTPClientContentTypes>) {
     if (
       message.senderInboxId.toLowerCase() === this.client.inboxId.toLowerCase()
@@ -86,11 +92,18 @@ export class XMTPHandler {
         );
       }
     } else {
-      // If not a command, prompt the agent
-      console.log("Prompting agent with message:", messageContent);
-      const result = await promptAgent(messageContent);
+      // Check if message contains an Ethereum address
+      const ethAddress = this.isEthereumAddress(trimmedContent);
+      if (ethAddress) {
+        console.log("Found Ethereum address:", ethAddress);
+        await conversation.send(`https://cabalchat.xyz/token/${ethAddress}`);
+      } else {
+        // If not a command or address, prompt the agent
+        console.log("Prompting agent with message:", messageContent);
+        const result = await promptAgent(messageContent);
 
-      await conversation.send(result.text);
+        await conversation.send(result.text);
+      }
     }
   }
 
