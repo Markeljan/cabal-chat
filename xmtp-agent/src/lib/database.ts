@@ -7,7 +7,7 @@ export interface CreateGroupData {
   description?: string;
   imageUrl?: string;
   createdBy: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, string>;
 }
 
 export type GroupWithMetadata = Group;

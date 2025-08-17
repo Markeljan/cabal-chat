@@ -20,6 +20,12 @@
       "recommended": true,
       "style": {
         "useImportType": "off"
+      },
+      "a11y": {
+        "noStaticElementInteractions": "off"
+      },
+      "performance": {
+        "noImgElement": "off"
       }
     },
     "domains": {
