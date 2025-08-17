@@ -53,9 +53,12 @@ export function createServer(xmtpHandler: XMTPHandler) {
         const conversationById = await client.conversations.getConversationById(
           group.groupId,
         );
-        const memberList = await conversationById.members();
 
-        group.members = memberList.length || null;
+        if (conversationById) {
+          const memberList = await conversationById.members();
+          group.members = memberList.length || null;
+        }
+
         return { success: true, group };
       },
       {
