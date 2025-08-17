@@ -165,8 +165,8 @@ export class XMTPHandler {
     }
 
     const { amount, symbol } = await this.balanceService.getTokenBalance(
-      address,
-      tokenAddress,
+      address as `0x${string}`,
+      tokenAddress as `0x${string}`,
     );
     await conversation.send(`Balance: ${amount} ${symbol}`);
   }

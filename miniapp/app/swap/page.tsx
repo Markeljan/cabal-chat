@@ -1,18 +1,34 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect } from "react";
 import { SwapInterface } from "@/app/components/SwapInterface";
 
 function SwapContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   const fromToken = searchParams.get("from") || undefined;
   const toToken = searchParams.get("to") || undefined;
+  const tokenAddress = searchParams.get("token") || undefined;
   const amount = searchParams.get("amount") || undefined;
   const address = searchParams.get("address") || undefined;
   const groupId = searchParams.get("group") || undefined;
 
+  // If a specific token address is provided, redirect to the new route
+  useEffect(() => {
+    if (tokenAddress) {
+      const params = new URLSearchParams();
+      if (groupId) params.set("group", groupId);
+      if (address) params.set("address", address);
+      const queryString = params.toString();
+      router.replace(
+        `/swap/${tokenAddress}${queryString ? `?${queryString}` : ""}`,
+      );
+    }
+  }, [tokenAddress, groupId, address, router]);
+
+  // Show the old interface for general swapping
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
       <h1 className="text-3xl font-bold mb-8">Swap Tokens</h1>

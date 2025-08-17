@@ -1,11 +1,24 @@
-# MiniKit Template
+# Cabal Chat - MiniApp
 
-This is a [Next.js 15](https://nextjs.org) project bootstrapped with [`create-onchain --mini`](), configured with:
+A [Next.js 15](https://nextjs.org) MiniApp for crypto trading within group chat "Cabals" on Base. Built with modern web3 technologies and XMTP messaging.
 
-- [MiniKit](https://docs.base.org/builderkits/minikit/overview)
-- [OnchainKit](https://www.base.org/builders/onchainkit)
-- [React 19](https://react.dev)
-- [Biomejs](https://biomejs.dev)
+## Key Features
+
+- 🏆 **Group Trading Competitions** - Create and join "Cabals" to compete in token trading
+- 💬 **XMTP Integration** - Seamless messaging and group chat functionality
+- 📊 **Leaderboards** - Track performance across users and groups with real-time PnL
+- 🔄 **Token Swapping** - Integrated swap interface with live price feeds
+- 👤 **User Profiles** - Comprehensive trading stats and activity history
+- 🎯 **Real-time Updates** - Live trading notifications and group activity
+
+## Tech Stack
+
+- [MiniKit](https://docs.base.org/builderkits/minikit/overview) - Base's MiniApp framework
+- [OnchainKit](https://www.base.org/builders/onchainkit) - Coinbase's onchain toolkit
+- [XMTP](https://xmtp.org) - Decentralized messaging protocol
+- [React 19](https://react.dev) - Modern React with concurrent features
+- [Prisma](https://prisma.io) - Type-safe database ORM
+- [Biomejs](https://biomejs.dev) - Fast linter and formatter
 
 ## Getting Started
 
@@ -17,15 +30,26 @@ bun install
 pnpm install
 ```
 
-2. Verify environment variables, these will be set up by the `bunx create-onchain --mini` command:
+2. Set up environment variables:
 
-You can regenerate the FARCASTER Account Association environment variables by running `bunx create-onchain --manifest` in your project directory.
+Copy `.env.example` to `.env` and configure the following:
 
-The environment variables enable the following features:
+**Required for core functionality:**
 
-- Frame metadata - Sets up the Frame Embed that will be shown when you cast your frame
-- Account association - Allows users to add your frame to their account, enables notifications
-- Redis API keys - Enable Webhooks and background notifications for your application by storing users notification details
+- `DATABASE_URL` - PostgreSQL database connection
+- `NEXT_PUBLIC_ONCHAINKIT_API_KEY` - Coinbase API key for onchain operations
+- `NEXT_PUBLIC_URL` - Your application's public URL
+
+**XMTP Configuration:**
+
+- XMTP keys are generated automatically on first run
+- Ensure the XMTP agent is running for full messaging functionality
+
+**Frame & Notifications:**
+
+- Frame metadata for Farcaster integration
+- Redis configuration for real-time notifications
+- Account association for user notifications
 
 ```bash
 # Shared/OnchainKit variables
@@ -63,54 +87,73 @@ bun run dev
 pnpm run dev
 ```
 
-## Template Features
+## Application Features
 
-### Frame Configuration
+### Trading & Swapping
 
-- `.well-known/farcaster.json` endpoint configured for Frame metadata and account association
-- Frame metadata automatically added to page headers in `layout.tsx`
+- **Token Swapping Interface** - Integrated swap functionality with live price feeds
+- **Transaction History** - Complete swap tracking with PnL calculations
+- **Token Portfolio** - View and manage your token holdings
+- **Price Alerts** - Real-time price updates and notifications
 
-### Background Notifications
+### Group Management ("Cabals")
 
-- Redis-backed notification system using Upstash
-- Ready-to-use notification endpoints in `api/notify` and `api/webhook`
-- Notification client utilities in `lib/notification-client.ts`
+- **Create Cabals** - Start new trading groups with custom names and descriptions
+- **Join Existing Groups** - Discover and participate in active trading communities
+- **Group Leaderboards** - Compete with fellow traders and track group performance
+- **XMTP Group Chat** - Seamless messaging within trading groups
 
-### Theming
+### User Experience
 
-- Custom theme defined in `theme.css` with OnchainKit variables
-- Pixel font integration with Pixelify Sans
+- **User Profiles** - Comprehensive trading statistics and performance metrics
+- **Responsive Design** - Optimized for mobile devices and Frame integration
+- **Real-time Updates** - Live trading notifications and group activity feeds
+- **Wallet Integration** - Connect with popular wallets via OnchainKit
 
-- Dark/light mode support through OnchainKit
+### Technical Features
 
-### MiniKit Provider
+- **Database Integration** - PostgreSQL with Prisma ORM for data persistence
+- **XMTP Messaging** - Decentralized messaging protocol integration
+- **Frame Support** - Full Farcaster Frame compatibility with metadata
+- **Background Services** - Redis-backed notification system for real-time updates
 
-The app is wrapped with `MiniKitProvider` in `providers.tsx`, configured with:
+## Development Setup
 
-- OnchainKit integration
-- Access to Frames context
-- Sets up Wagmi Connectors
-- Sets up Frame SDK listeners
-- Applies Safe Area Insets
+### Database Setup
 
-## Customization
+1. Set up PostgreSQL database and update `DATABASE_URL` in your `.env`
 
-To get started building your own frame, follow these steps:
+2. Run Prisma migrations:
+```bash
+bun prisma generate
+bun prisma db push
+```
 
-1. Remove the DemoComponents:
+### XMTP Agent Integration
 
-   - Delete `components/DemoComponents.tsx`
-   - Remove demo-related imports from `page.tsx`
+For full functionality, ensure the XMTP Agent is running:
 
-2. Start building your Frame:
+```bash
+cd ../xmtp-agent
+bun install
+bun dev
+```
 
-   - Modify `page.tsx` to create your Frame UI
-   - Update theme variables in `theme.css`
-   - Adjust MiniKit configuration in `providers.tsx`
+### Key Components
 
-3. Add your frame to your account:
-   - Cast your frame to see it in action
-   - Share your frame with others to start building your community
+- **`app/page.tsx`** - Main application interface with tab navigation
+- **`app/components/`** - Reusable UI components for trading and group management
+- **`lib/hooks/useXMTP.ts`** - XMTP client hook for messaging functionality  
+- **`app/api/`** - API routes for swaps, leaderboards, and user data
+- **`prisma/schema.prisma`** - Database schema for users, groups, and swaps
+
+### Deployment
+
+The app is designed to work as a Farcaster Frame and can be deployed to:
+
+- Vercel (recommended for Next.js apps)
+- Railway or similar platforms
+- Make sure to set all required environment variables
 
 ## Learn More
 

@@ -7,19 +7,30 @@ const balanceService = new BalanceService();
 
 const getBalance = tool({
   description: "Fetch a token balance using Coinbase Developer Platform",
-  parameters: z.object({
+  inputSchema: z.object({
     address: z.string().describe("Wallet address"),
     tokenAddress: z
       .string()
       .optional()
       .describe("Token contract address; defaults to USDC"),
   }),
-  execute: async ({ address, tokenAddress }) => {
-    const { amount, symbol } = await balanceService.getTokenBalance(
-      address,
-      tokenAddress,
-    );
-    return `${amount} ${symbol}`;
+  execute: async ({
+    address,
+    tokenAddress,
+  }: {
+    address: string;
+    tokenAddress?: string;
+  }) => {
+    try {
+      const { amount, symbol } = await balanceService.getTokenBalance(
+        address as `0x${string}`,
+        tokenAddress as `0x${string}`,
+      );
+      return `${amount} ${symbol}`;
+    } catch (error) {
+      console.error("Error fetching balance", error);
+      return "Error fetching balance";
+    }
   },
 });
 

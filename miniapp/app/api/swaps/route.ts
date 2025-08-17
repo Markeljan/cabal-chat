@@ -20,9 +20,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Ensure the user exists before creating the swap
+    const userAddress = body.userAddress.toLowerCase();
+    await prisma.user.upsert({
+      where: { address: userAddress },
+      update: {}, // Don't update anything if user exists
+      create: {
+        address: userAddress,
+        username: null,
+        avatarUrl: null,
+      },
+    });
+
     const swap = await prisma.swap.create({
       data: {
-        userAddress: body.userAddress.toLowerCase(),
+        userAddress,
         groupId: body.groupId,
         fromToken: body.fromToken,
         toToken: body.toToken,

@@ -18,6 +18,18 @@ export class DatabaseService {
     data: CreateGroupData,
   ): Promise<GroupWithMetadata> {
     console.log(data);
+
+    // Ensure the user exists before creating the group
+    await prisma.user.upsert({
+      where: { address: data.createdBy },
+      update: {}, // Don't update anything if user exists
+      create: {
+        address: data.createdBy,
+        username: null,
+        avatarUrl: null,
+      },
+    });
+
     return await prisma.group.create({
       data: {
         name: data.name,
@@ -71,6 +83,17 @@ export class DatabaseService {
   }
 
   async addGroupMember(groupId: string, address: string): Promise<GroupMember> {
+    // Ensure the user exists before adding them as a group member
+    await prisma.user.upsert({
+      where: { address },
+      update: {}, // Don't update anything if user exists
+      create: {
+        address,
+        username: null,
+        avatarUrl: null,
+      },
+    });
+
     return await prisma.groupMember.create({
       data: {
         groupId,
