@@ -93,6 +93,7 @@ export async function generateMetadata({
       : `View token details for ${address}`,
     other: {
       "fc:miniapp": JSON.stringify(miniapp),
+      "fc:frame": JSON.stringify(miniapp),
     },
   };
 }
