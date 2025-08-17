@@ -24,10 +24,10 @@ import {
 import { useAccount } from "wagmi";
 import {
   type Group,
-  GroupResponse,
-  GroupsResponse,
+  type GroupResponse,
+  type GroupsResponse,
   groupApi,
-} from "../../lib/group-api";
+} from "@/lib/group-api";
 
 type ButtonProps = {
   children: ReactNode;
