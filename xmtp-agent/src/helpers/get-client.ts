@@ -8,9 +8,11 @@ import {
 } from "@/helpers/client";
 import { ENCRYPTION_KEY, WALLET_KEY, XMTP_ENV } from "@/lib/config";
 
-export type XMTPClient = Client<
-  ExtractCodecContentTypes<[WalletSendCallsCodec, TransactionReferenceCodec]>
+export type XMTPClientContentTypes = ExtractCodecContentTypes<
+  [WalletSendCallsCodec, TransactionReferenceCodec]
 >;
+
+export type XMTPClient = Client<XMTPClientContentTypes>;
 
 export const getXmtpClient = async (): Promise<XMTPClient> => {
   /* Create the signer using viem and parse the encryption key for the local db */

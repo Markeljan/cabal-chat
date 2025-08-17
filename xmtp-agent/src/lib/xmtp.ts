@@ -1,6 +1,7 @@
 import { ContentTypeWalletSendCalls } from "@xmtp/content-type-wallet-send-calls";
 import type { Conversation, DecodedMessage } from "@xmtp/node-sdk";
-import type { XMTPClient } from "@/helpers/get-client";
+import type { XMTPClient, XMTPClientContentTypes } from "@/helpers/get-client";
+import { promptAgent } from "@/lib/ai";
 import { USDCHandler } from "@/lib/usdc";
 
 export class XMTPHandler {
@@ -26,7 +27,7 @@ export class XMTPHandler {
     }
   }
 
-  private async handleMessage(message: DecodedMessage) {
+  private async handleMessage(message: DecodedMessage<XMTPClientContentTypes>) {
     if (
       message.senderInboxId.toLowerCase() === this.client.inboxId.toLowerCase()
     ) {
@@ -38,7 +39,7 @@ export class XMTPHandler {
     }
 
     console.log(
-      `Received message: ${message.content as string} by ${message.senderInboxId}`,
+      `Received message: ${message.content} by ${message.senderInboxId}`,
     );
 
     const conversation = await this.client.conversations.getConversationById(
@@ -53,60 +54,104 @@ export class XMTPHandler {
     const inboxState = await this.client.preferences.inboxStateFromInboxIds([
       message.senderInboxId,
     ]);
+
     const memberAddress = inboxState[0].identifiers[0].identifier;
+
     if (!memberAddress) {
       console.log("Unable to find member address, skipping");
       return;
     }
 
-    const messageContent = message.content as string;
-    const command = messageContent.toLowerCase().trim();
+    const messageContent = message.content;
 
-    try {
-      await this.processCommand(command, conversation, memberAddress);
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      console.error("Error processing command:", errorMessage);
-      await conversation.send(
-        "Sorry, I encountered an error processing your command.",
-      );
+    // Skip non text messages (walletsendcalls, transaction references, and group updates)
+    if (!messageContent || typeof messageContent !== "string") {
+      console.log("Missing or non-text message content, skipping");
+      return;
+    }
+
+    const trimmedContent = messageContent.trim();
+
+    // Check if message starts with a slash command
+    if (trimmedContent.startsWith("/")) {
+      try {
+        console.log("Processing command:", trimmedContent);
+        await this.processCommand(trimmedContent, conversation, memberAddress);
+      } catch (error: unknown) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        console.error("Error processing command:", errorMessage);
+        await conversation.send(
+          "Sorry, I encountered an error processing your command.",
+        );
+      }
+    } else {
+      // If not a command, prompt the agent
+      console.log("Prompting agent with message:", messageContent);
+      const result = await promptAgent(messageContent);
+      await conversation.send(result.text);
     }
   }
 
   private async processCommand(
+    input: string,
+    conversation: Conversation,
+    memberAddress: string,
+  ) {
+    const command = input.toLowerCase();
+
+    // Define valid commands and their handlers
+    if (command === "/balance") {
+      await this.handleBalanceCommand(conversation, memberAddress);
+    } else if (command.startsWith("/tx ")) {
+      await this.handleTransactionCommand(command, conversation, memberAddress);
+    } else {
+      // Any invalid command (including /help) shows the help message
+      await this.showHelp(conversation);
+    }
+  }
+
+  private async handleBalanceCommand(
+    conversation: Conversation,
+    memberAddress: string,
+  ) {
+    const result = await this.usdcHandler.getUSDCBalance(memberAddress);
+    await conversation.send(`Your USDC balance is: ${result} USDC`);
+  }
+
+  private async handleTransactionCommand(
     command: string,
     conversation: Conversation,
     memberAddress: string,
   ) {
-    if (command === "/balance") {
-      const result = await this.usdcHandler.getUSDCBalance(memberAddress);
-      await conversation.send(`Your USDC balance is: ${result} USDC`);
-    } else if (command.startsWith("/tx ")) {
-      const amount = parseFloat(command.split(" ")[1]);
-      if (Number.isNaN(amount) || amount <= 0) {
-        await conversation.send(
-          "Please provide a valid amount. Usage: /tx <amount>",
-        );
-        return;
-      }
+    const parts = command.split(" ");
+    const amount = parseFloat(parts[1]);
 
-      const amountInDecimals = Math.floor(amount * 10 ** 6);
-
-      const walletSendCalls = this.usdcHandler.createUSDCTransferCalls({
-        recipientAddress: memberAddress,
-        amount: amountInDecimals,
-      });
-
-      console.log("Replied with wallet sendcall");
-      await conversation.send(walletSendCalls, ContentTypeWalletSendCalls);
-    } else {
+    if (Number.isNaN(amount) || amount <= 0) {
       await conversation.send(
-        "Available commands:\n" +
-          "/balance - Check your USDC balance\n" +
-          "/tx <amount> - Send USDC to the agent (e.g. /tx 0.1)",
+        "Please provide a valid amount. Usage: /tx <amount>",
       );
+      return;
     }
+
+    const amountInDecimals = Math.floor(amount * 10 ** 6);
+
+    const walletSendCalls = this.usdcHandler.createUSDCTransferCalls({
+      recipientAddress: memberAddress,
+      amount: amountInDecimals,
+    });
+
+    console.log("Replied with wallet sendcall");
+    await conversation.send(walletSendCalls, ContentTypeWalletSendCalls);
+  }
+
+  private async showHelp(conversation: Conversation) {
+    await conversation.send(
+      "Available commands:\n" +
+        "/balance - Check your USDC balance\n" +
+        "/tx <amount> - Send USDC to the agent (e.g. /tx 0.1)\n" +
+        "/help - Show this help message",
+    );
   }
 
   getClient() {

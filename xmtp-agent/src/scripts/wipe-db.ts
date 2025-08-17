@@ -19,7 +19,7 @@ const __dirname = path.dirname(__filename);
  * This mirrors the logic from helpers/client.ts
  */
 function getDbDirectory() {
-  const volumePath = process.env.RAILWAY_VOLUME_MOUNT_PATH || "./data/xmtp";
+  const volumePath = process.env.RAILWAY_VOLUME_MOUNT_PATH || "../.data/xmtp";
 
   // Resolve relative to project root
   const projectRoot = path.resolve(__dirname, "..");
