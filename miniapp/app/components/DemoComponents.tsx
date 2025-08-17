@@ -102,7 +102,6 @@ function Card({ title, children, className = "", onClick }: CardProps) {
   };
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: demo card
     <div
       className={`bg-[var(--app-card-bg)] backdrop-blur-md rounded-xl shadow-lg border border-[var(--app-card-border)] overflow-hidden transition-all hover:shadow-xl ${className} ${onClick ? "cursor-pointer" : ""}`}
       onClick={onClick}

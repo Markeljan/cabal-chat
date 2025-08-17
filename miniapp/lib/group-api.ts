@@ -5,7 +5,7 @@ export interface CreateGroupRequest {
   description?: string;
   imageUrl?: string;
   createdBy: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface Group {
@@ -14,7 +14,7 @@ export interface Group {
   description?: string;
   imageUrl?: string;
   createdBy: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
   memberCount?: number;
