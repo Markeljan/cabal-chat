@@ -16,3 +16,5 @@ out/
 
 /.data/xmtp
 /src/generated/prisma
+
+tsconfig.tsbuildinfo

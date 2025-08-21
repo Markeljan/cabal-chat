@@ -178,10 +178,10 @@ Confirmation sent via XMTP
 **Core Models:**
 - **Users** - Wallet addresses with aggregated trading stats
 - **Groups** - Cabal details with performance metrics
-- **GroupMembers** - User membership with group-specific stats  
+- Group membership is represented by a many-to-many relation between `User` and `Group`. Per-group user stats are derived from `Swap` records.
 - **Swaps** - Individual trades with PnL calculations
 - **TokenPrices** - Historical price data for PnL tracking
-
+Ï
 ## 🎨 Features Deep Dive
 
 ### 🏆 Competitive Leaderboards

@@ -127,30 +127,40 @@ export class LeaderboardService {
     limit: number = 50,
     offset: number = 0,
   ): Promise<GroupMemberLeaderboardEntry[]> {
-    const members = await prisma.groupMember.findMany({
-      where: {
-        groupId,
-        swapsInGroup: { gt: 0 },
-      },
-      orderBy: { volumeInGroup: "desc" },
-      take: limit,
-      skip: offset,
-      include: {
-        user: {
-          select: {
-            username: true,
-          },
-        },
-      },
+    // Derive per-user stats within the group from swaps
+    const userAgg = await prisma.swap.groupBy({
+      by: ["userAddress"],
+      where: { groupId, status: "COMPLETED" },
+      _sum: { fromAmountUsd: true, pnlUsd: true },
+      _count: { _all: true },
     });
 
-    return members.map((member, index) => ({
+    // Sort by volume desc, apply pagination
+    const sorted = userAgg
+      .map((u) => ({
+        address: u.userAddress,
+        volumeInGroup: u._sum.fromAmountUsd ?? new Decimal(0),
+        swapsInGroup: u._count._all,
+        pnlInGroupUsd: u._sum.pnlUsd ?? new Decimal(0),
+      }))
+      .sort((a, b) => b.volumeInGroup.minus(a.volumeInGroup).toNumber())
+      .slice(offset, offset + limit);
+
+    // Fetch usernames for the page
+    const addresses = sorted.map((s) => s.address);
+    const users = await prisma.user.findMany({
+      where: { address: { in: addresses } },
+      select: { address: true, username: true },
+    });
+    const userMap = new Map(users.map((u) => [u.address, u.username] as const));
+
+    return sorted.map((entry, index) => ({
       rank: offset + index + 1,
-      address: member.address,
-      username: member.user.username,
-      volumeInGroup: member.volumeInGroup.toString(),
-      swapsInGroup: member.swapsInGroup,
-      pnlInGroupUsd: member.pnlInGroupUsd.toString(),
+      address: entry.address,
+      username: userMap.get(entry.address) ?? null,
+      volumeInGroup: entry.volumeInGroup.toString(),
+      swapsInGroup: entry.swapsInGroup,
+      pnlInGroupUsd: entry.pnlInGroupUsd.toString(),
     }));
   }
 
@@ -165,11 +175,7 @@ export class LeaderboardService {
           orderBy: { createdAt: "desc" },
           take: 10,
         },
-        groupMembers: {
-          include: {
-            group: true,
-          },
-        },
+        groups: true,
       },
     });
 
@@ -229,12 +235,7 @@ export class LeaderboardService {
             pnlPercent: worstSwap.pnlPercent.toString(),
           }
         : null,
-      groups: user.groupMembers.map((member) => ({
-        ...member.group,
-        volumeInGroup: member.volumeInGroup.toString(),
-        swapsInGroup: member.swapsInGroup,
-        pnlInGroupUsd: member.pnlInGroupUsd.toString(),
-      })),
+      groups: user.groups,
     };
   }
 
@@ -245,13 +246,6 @@ export class LeaderboardService {
     const group = await prisma.group.findUnique({
       where: { groupId },
       include: {
-        members: {
-          orderBy: { volumeInGroup: "desc" },
-          take: 10,
-          include: {
-            user: true,
-          },
-        },
         swaps: {
           orderBy: { createdAt: "desc" },
           take: 10,
@@ -289,14 +283,21 @@ export class LeaderboardService {
       },
       rank: groupRank,
       memberCount: group._count.members,
-      topMembers: group.members.map((member) => ({
-        address: member.address,
-        username: member.user.username,
-        avatarUrl: member.user.avatarUrl,
-        volumeInGroup: member.volumeInGroup.toString(),
-        swapsInGroup: member.swapsInGroup,
-        pnlInGroupUsd: member.pnlInGroupUsd.toString(),
-      })),
+      topMembers: await (async () => {
+        const leaderboard = await this.getGroupMemberLeaderboard(
+          groupId,
+          10,
+          0,
+        );
+        return leaderboard.map((m) => ({
+          address: m.address,
+          username: m.username || null,
+          avatarUrl: null,
+          volumeInGroup: m.volumeInGroup,
+          swapsInGroup: m.swapsInGroup,
+          pnlInGroupUsd: m.pnlInGroupUsd,
+        }));
+      })(),
       recentSwaps: group.swaps.map((swap) => ({
         ...swap,
         fromAmount: swap.fromAmount.toString(),

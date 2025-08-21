@@ -56,8 +56,8 @@ export class GroupService {
     }
   }
 
-  async getGroupDetails(groupId: string) {
-    return await this.db.getGroupByGroupId(groupId);
+  async getGroupDetails(id: string) {
+    return await this.db.getGroupById(id);
   }
 
   async getUserGroups(userAddress: string) {
@@ -117,9 +117,8 @@ export class GroupService {
   }
 
   async getGroupMember(groupId: string, address: string) {
-    const member = await this.db.getGroupMember(groupId, address);
-    console.log(member);
-    return member;
+    const isMember = await this.db.getGroupMember(groupId, address);
+    return isMember ? { isActive: true } : null;
   }
 
   async getGroupMembers(groupId: string) {

@@ -83,22 +83,6 @@ export class SwapTracker {
             },
           },
         });
-
-        // Update group member stats
-        await tx.groupMember.updateMany({
-          where: {
-            groupId: swapData.groupId,
-            address: swapData.userAddress,
-          },
-          data: {
-            volumeInGroup: {
-              increment: new Decimal(swapData.fromAmountUsd),
-            },
-            swapsInGroup: {
-              increment: 1,
-            },
-          },
-        });
       }
 
       return swap;
@@ -256,31 +240,7 @@ export class SwapTracker {
       },
     });
 
-    // Update group member PNL
-    const memberSwaps = await prisma.swap.groupBy({
-      by: ["userAddress"],
-      where: {
-        groupId,
-        status: SwapStatus.COMPLETED,
-      },
-      _sum: {
-        pnlUsd: true,
-      },
-    });
-
-    for (const memberSwap of memberSwaps) {
-      if (memberSwap._sum.pnlUsd) {
-        await prisma.groupMember.updateMany({
-          where: {
-            groupId,
-            address: memberSwap.userAddress,
-          },
-          data: {
-            pnlInGroupUsd: memberSwap._sum.pnlUsd,
-          },
-        });
-      }
-    }
+    // Group member per-user PNL is now derived on demand
   }
 
   /**

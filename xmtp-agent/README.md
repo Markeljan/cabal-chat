@@ -170,7 +170,7 @@ Key models tracked by the agent:
 - **Users** - Ethereum addresses with trading stats
 - **Groups** - XMTP group chats with performance metrics  
 - **Swaps** - Individual trades with PnL calculations
-- **GroupMembers** - User membership and group-specific stats
+- Group membership is represented by a many-to-many relation between `User` and `Group`. Per-group user stats are derived from `Swap` records.
 
 ### AI Behavior
 

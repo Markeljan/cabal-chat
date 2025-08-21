@@ -161,10 +161,10 @@ class DatabaseAdapter {
   async checkMembership(
     groupId: string,
     userWallet: string,
-  ): Promise<ApiResponse<{ isMember: boolean }>> {
-    return this.request<{ isMember: boolean }>(
+  ): Promise<{ success: boolean; member?: { isActive: boolean } }> {
+    return this.request<{ member: { isActive: boolean } }>(
       `/groups/${groupId}/members/${userWallet}`,
-    );
+    ) as Promise<{ success: boolean; member?: { isActive: boolean } }>;
   }
 
   // Swap operations

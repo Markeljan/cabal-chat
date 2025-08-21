@@ -45,6 +45,7 @@ export function createServer(xmtpHandler: XMTPHandler) {
     .get(
       "/groups/:groupId",
       async ({ params }) => {
+        console.log("LOOKING FOR GROUP", params.groupId);
         const group = await groupService.getGroupDetails(params.groupId);
         if (!group) {
           throw new Error("Group not found");
@@ -76,21 +77,14 @@ export function createServer(xmtpHandler: XMTPHandler) {
         if (!group) {
           throw new Error("Group not found");
         }
-        if (group.createdBy === params.address) {
-          return { success: true, member: { isActive: true } };
-        }
-        const member = await groupService.getGroupMember(
-          group.groupId,
-          params.address,
-        );
-        if (!member) {
-          return {
-            success: false,
-            member: null,
-            message: "Member not found in group",
-          };
-        }
-        return { success: true, member };
+        const isMember =
+          group.createdBy === params.address
+            ? true
+            : !!(await groupService.getGroupMember(
+                group.groupId,
+                params.address,
+              ));
+        return { success: true, member: { isActive: isMember } };
       },
       {
         params: t.Object({

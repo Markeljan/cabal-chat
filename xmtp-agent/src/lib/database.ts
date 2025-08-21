@@ -1,4 +1,4 @@
-import { type Group, type GroupMember, PrismaClient } from "@prisma/client";
+import { type Group, PrismaClient, type User } from "@prisma/client";
 
 export const prisma = new PrismaClient();
 
@@ -42,9 +42,9 @@ export class DatabaseService {
     });
   }
 
-  async getGroupByGroupId(groupId: string): Promise<GroupWithMetadata | null> {
+  async getGroupById(id: string): Promise<GroupWithMetadata | null> {
     return await prisma.group.findUnique({
-      where: { id: groupId },
+      where: { id },
     });
   }
 
@@ -82,11 +82,11 @@ export class DatabaseService {
     });
   }
 
-  async addGroupMember(groupId: string, address: string): Promise<GroupMember> {
+  async addGroupMember(groupId: string, address: string): Promise<void> {
     // Ensure the user exists before adding them as a group member
     await prisma.user.upsert({
       where: { address },
-      update: {}, // Don't update anything if user exists
+      update: {},
       create: {
         address,
         username: null,
@@ -94,48 +94,61 @@ export class DatabaseService {
       },
     });
 
-    return await prisma.groupMember.create({
+    // Connect user to the group via many-to-many relation
+    await prisma.group.update({
+      where: { groupId },
       data: {
-        groupId,
-        address,
+        members: {
+          connect: { address },
+        },
       },
     });
   }
 
   async removeGroupMember(groupId: string, address: string): Promise<void> {
-    await prisma.groupMember.updateMany({
-      where: { groupId, address },
-      data: { isActive: false },
-    });
-  }
-
-  async getGroupMember(
-    groupId: string,
-    address: string,
-  ): Promise<GroupMember | null> {
-    return await prisma.groupMember.findUnique({
-      where: {
-        groupId_address: { groupId, address },
-        isActive: true,
+    await prisma.group.update({
+      where: { groupId },
+      data: {
+        members: {
+          disconnect: { address },
+        },
       },
     });
   }
 
-  async getGroupMembers(groupId: string): Promise<GroupMember[]> {
-    return await prisma.groupMember.findMany({
-      where: { groupId, isActive: true },
-      orderBy: { joinedAt: "desc" },
+  async getGroupMember(groupId: string, address: string): Promise<boolean> {
+    const result = await prisma.group.findUnique({
+      where: { groupId },
+      select: {
+        members: {
+          where: { address },
+          select: { address: true },
+          take: 1,
+        },
+      },
     });
+    return (result?.members.length || 0) > 0;
+  }
+
+  async getGroupMembers(groupId: string): Promise<User[]> {
+    const group = await prisma.group.findUnique({
+      where: { groupId },
+      select: {
+        members: true,
+      },
+    });
+    return group?.members ?? [];
   }
 
   async getUserJoinedGroups(address: string): Promise<GroupWithMetadata[]> {
-    const memberRecords = await prisma.groupMember.findMany({
-      where: { address, isActive: true },
-      include: { group: true },
+    const userWithGroups = await prisma.user.findUnique({
+      where: { address },
+      select: {
+        groups: {
+          where: { isActive: true },
+        },
+      },
     });
-
-    return memberRecords
-      .map((record) => record.group)
-      .filter((group) => group.isActive);
+    return userWithGroups?.groups ?? [];
   }
 }
